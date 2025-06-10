@@ -36,12 +36,6 @@ variable "database_subnet_cidrs" {
   default     = ["10.0.100.0/24", "10.0.200.0/24"]
 }
 
-variable "elasticache_subnet_cidrs" {
-  description = "CIDR blocks for ElastiCache subnets"
-  type        = list(string)
-  default     = ["10.0.110.0/24", "10.0.210.0/24"]
-}
-
 variable "enable_dns_hostnames" {
   description = "Enable DNS hostnames in the VPC"
   type        = bool
@@ -52,18 +46,6 @@ variable "enable_dns_support" {
   description = "Enable DNS support in the VPC"
   type        = bool
   default     = true
-}
-
-variable "enable_flow_logs" {
-  description = "Enable VPC Flow Logs"
-  type        = bool
-  default     = false
-}
-
-variable "flow_logs_retention_days" {
-  description = "CloudWatch log group retention period for VPC Flow Logs"
-  type        = number
-  default     = 14
 }
 
 variable "availability_zones" {

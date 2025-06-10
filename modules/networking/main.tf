@@ -271,6 +271,59 @@ resource "aws_network_acl" "database" {
     from_port  = 0
     to_port    = 0
   }
+}
+
+
+# Security Group for Database (e.g., PostgreSQL)
+resource "aws_security_group" "db_sg" {
+  name        = "${var.project_name}-${var.environment}-db-sg"
+  description = "Allow inbound traffic to database from private subnets"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "Allow DB access from private application subnets"
+    from_port   = 5432 # PostgreSQL port
+    to_port     = 5432 
+    protocol    = "tcp"
+    # Allow traffic from any IP within the private subnets' CIDR blocks
+    # This assumes the application instances are in the private subnets.
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-db-sg"
+  })
+}
+
+# Security Group for ElastiCache (e.g., Redis)
+resource "aws_security_group" "cache_sg" {
+  name        = "${var.project_name}-${var.environment}-cache-sg"
+  description = "Allow inbound traffic to ElastiCache from private subnets"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "Allow Cache access from private application subnets"
+    from_port   = 6379 # Redis port
+    to_port     = 6379 
+    protocol    = "tcp"
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-database-nacl"

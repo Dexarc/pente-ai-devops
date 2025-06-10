@@ -126,3 +126,13 @@ output "availability_zones" {
   description = "List of availability zones used"
   value       = local.azs
 }
+
+output "db_security_group_id" {
+  description = "The ID of the database security group."
+  value       = aws_security_group.db_sg.id
+}
+
+output "elasticache_security_group_id" {
+  description = "The ID of the ElastiCache security group."
+  value       = aws_security_group.cache_sg.id
+}
