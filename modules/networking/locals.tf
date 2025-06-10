@@ -29,9 +29,4 @@ locals {
     local.azs[idx] => subnet.id
   }
 
-  elasticache_subnet_map = {
-    for idx, subnet in aws_subnet.elasticache : 
-    local.azs[idx] => subnet.id
-  }
-
 }

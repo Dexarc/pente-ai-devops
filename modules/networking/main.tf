@@ -67,7 +67,7 @@ resource "aws_subnet" "private" {
   })
 }
 
-# Database Subnets
+# Database/Data Tier Subnets (shared by both RDS and ElastiCache)
 resource "aws_subnet" "database" {
   count = length(var.database_subnet_cidrs)
 
@@ -76,24 +76,10 @@ resource "aws_subnet" "database" {
   availability_zone = local.azs[count.index]
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_name}-${var.environment}-database-subnet-${count.index + 1}"
+    Name = "${var.project_name}-${var.environment}-data-subnet-${count.index + 1}"
     Type = "private"
-    Tier = "database"
-  })
-}
-
-# ElastiCache Subnets (using same CIDR as database)
-resource "aws_subnet" "elasticache" {
-  count = length(var.database_subnet_cidrs)
-
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.database_subnet_cidrs[count.index]
-  availability_zone = local.azs[count.index]
-
-  tags = merge(local.common_tags, {
-    Name = "${var.project_name}-${var.environment}-cache-subnet-${count.index + 1}"
-    Type = "private"
-    Tier = "cache"
+    Tier = "data"
+    Purpose = "database-cache"
   })
 }
 
@@ -137,12 +123,12 @@ resource "aws_route_table" "private" {
   })
 }
 
-# Route Table for Database Subnets
+# Route Table for Database/Data Tier Subnets
 resource "aws_route_table" "database" {
   vpc_id = aws_vpc.main.id
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_name}-${var.environment}-database-rt"
+    Name = "${var.project_name}-${var.environment}-data-rt"
   })
 }
 
@@ -170,15 +156,7 @@ resource "aws_route_table_association" "database" {
   route_table_id = aws_route_table.database.id
 }
 
-# Route Table Associations - ElastiCache Subnets
-resource "aws_route_table_association" "elasticache" {
-  count = length(aws_subnet.elasticache)
-
-  subnet_id      = aws_subnet.elasticache[count.index].id
-  route_table_id = aws_route_table.database.id
-}
-
-# Database Subnet Group
+# Database Subnet Group (for RDS)
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-db-subnet-group"
   subnet_ids = aws_subnet.database[*].id
@@ -188,10 +166,10 @@ resource "aws_db_subnet_group" "main" {
   })
 }
 
-# ElastiCache Subnet Group
+# ElastiCache Subnet Group (using the same database subnets)
 resource "aws_elasticache_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-cache-subnet-group"
-  subnet_ids = aws_subnet.elasticache[*].id
+  subnet_ids = aws_subnet.database[*].id  # Same subnets as database
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-cache-subnet-group"
@@ -206,7 +184,7 @@ resource "aws_default_network_acl" "default" {
   ingress {
     rule_no    = 100
     protocol   = "-1"
-    action = "allow"
+    action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 0
     to_port    = 0
@@ -216,7 +194,7 @@ resource "aws_default_network_acl" "default" {
   egress {
     rule_no    = 100
     protocol   = "-1"
-    action = "allow"
+    action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 0
     to_port    = 0
@@ -256,7 +234,7 @@ resource "aws_network_acl" "database" {
   ingress {
     rule_no    = 120
     protocol   = "tcp"
-    action = "allow"
+    action     = "allow"
     cidr_block = var.vpc_cidr
     from_port  = 1024
     to_port    = 65535
@@ -266,13 +244,16 @@ resource "aws_network_acl" "database" {
   egress {
     rule_no    = 100
     protocol   = "-1"
-    action = "allow"
+    action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 0
     to_port    = 0
   }
-}
 
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-data-nacl"
+  })
+}
 
 # Security Group for Database (e.g., PostgreSQL)
 resource "aws_security_group" "db_sg" {
@@ -285,8 +266,6 @@ resource "aws_security_group" "db_sg" {
     from_port   = 5432 # PostgreSQL port
     to_port     = 5432 
     protocol    = "tcp"
-    # Allow traffic from any IP within the private subnets' CIDR blocks
-    # This assumes the application instances are in the private subnets.
     cidr_blocks = var.private_subnet_cidrs
   }
 
@@ -326,6 +305,6 @@ resource "aws_security_group" "cache_sg" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_name}-${var.environment}-database-nacl"
+    Name = "${var.project_name}-${var.environment}-cache-sg"
   })
 }

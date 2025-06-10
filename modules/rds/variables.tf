@@ -21,7 +21,7 @@ variable "db_name" {
 variable "db_master_username_value" {
   description = "Master username for the RDS instance"
   type        = string
-  default     = "admin"
+  default     = "dbsqladmin"
 }
 
 variable "db_instance_class" {

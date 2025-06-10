@@ -121,15 +121,15 @@ output "db_parameter_group_arn" {
 }
 
 # CloudWatch and Monitoring
-output "db_cloudwatch_log_group_name" {
-  description = "Name of the CloudWatch log group for PostgreSQL logs"
-  value       = aws_cloudwatch_log_group.postgresql.name
-}
+# output "db_cloudwatch_log_group_name" {
+#   description = "Name of the CloudWatch log group for PostgreSQL logs"
+#   value       = aws_cloudwatch_log_group.postgresql.name
+# }
 
-output "db_cloudwatch_log_group_arn" {
-  description = "ARN of the CloudWatch log group for PostgreSQL logs"
-  value       = aws_cloudwatch_log_group.postgresql.arn
-}
+# output "db_cloudwatch_log_group_arn" {
+#   description = "ARN of the CloudWatch log group for PostgreSQL logs"
+#   value       = aws_cloudwatch_log_group.postgresql.arn
+# }
 
 output "db_enhanced_monitoring_role_arn" {
   description = "ARN of the enhanced monitoring IAM role"

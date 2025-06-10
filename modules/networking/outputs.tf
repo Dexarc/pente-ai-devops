@@ -47,11 +47,6 @@ output "database_subnet_ids" {
   value       = aws_subnet.database[*].id
 }
 
-output "elasticache_subnet_ids" {
-  description = "List of ElastiCache subnet IDs"
-  value       = aws_subnet.elasticache[*].id
-}
-
 # Subnet Maps 
 output "public_subnet_map" {
   description = "Map of AZ to public subnet ID"
@@ -66,11 +61,6 @@ output "private_subnet_map" {
 output "database_subnet_map" {
   description = "Map of AZ to database subnet ID"
   value       = local.database_subnet_map
-}
-
-output "elasticache_subnet_map" {
-  description = "Map of AZ to ElastiCache subnet ID"
-  value       = local.elasticache_subnet_map
 }
 
 # Subnet Group Outputs

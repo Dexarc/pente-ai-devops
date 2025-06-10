@@ -13,13 +13,6 @@ resource "aws_s3_bucket" "static_assets" {
   })
 }
 
-# --- S3 Bucket ACL for Static Assets ---
-# Setting ACL to private explicitly
-resource "aws_s3_bucket_acl" "static_assets_acl" {
-  bucket = aws_s3_bucket.static_assets.id
-  acl    = "private"
-}
-
 # --- S3 Bucket Versioning for Static Assets ---
 resource "aws_s3_bucket_versioning" "static_assets_versioning" {
   bucket = aws_s3_bucket.static_assets.id

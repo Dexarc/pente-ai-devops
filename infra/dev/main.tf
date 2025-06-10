@@ -86,8 +86,8 @@ module "ecs_service" {
   environment           = var.environment
   aws_region            = data.aws_region.current.name
   vpc_id                = module.networking.vpc_id
-  public_subnet_ids     = var.public_subnet_cidrs # For ALB
-  private_subnet_ids    = var.private_subnet_cidrs # For ECS tasks
+  public_subnet_ids     = module.networking.public_subnet_ids
+  private_subnet_ids    = module.networking.private_subnet_ids
   database_subnet_cidrs = var.database_subnet_cidrs# For ECS task egress to DB
   ecs_cluster_id        = aws_ecs_cluster.main.id # Reference the root-level ECS cluster
 

@@ -7,7 +7,7 @@
 resource "random_password" "db_master_password" {
   length         = 32
   special        = true
-  override_special = "!@#$%^&*()-_=+" # Customize if needed
+  override_special = "!#$%^&*()-_=+.?[]{}<>" # Valid special characters for RDS
   min_lower      = 1
   min_upper      = 1
   min_numeric    = 1
@@ -39,22 +39,26 @@ resource "aws_ssm_parameter" "db_password" {
 
 # RDS DB Parameter Group
 resource "aws_db_parameter_group" "main" {
-  family = "postgres15"
-  name   = "${var.project_name}-${var.environment}-db-params"
+  family = "postgres17"
+  # It's good to end name_prefix with a hyphen, so Terraform adds a clean suffix
+  name_prefix   = "${var.project_name}-${var.environment}-db-params-"
 
   parameter {
     name  = "log_statement"
     value = "all"
+    apply_method = "immediate"
   }
 
   parameter {
     name  = "log_min_duration_statement"
     value = "1000"
+    apply_method = "immediate"
   }
 
   parameter {
     name  = "shared_preload_libraries"
     value = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
 
   tags = merge(var.tags, {
@@ -72,7 +76,7 @@ resource "aws_db_instance" "main" {
 
   # Database Engine Configuration
   engine               = "postgres"
-  engine_version       = "15.5"
+  engine_version       = "17.4"
   instance_class       = var.db_instance_class
   parameter_group_name = aws_db_parameter_group.main.name
 
@@ -159,13 +163,13 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
 
-# CloudWatch Log Group for PostgreSQL logs
-resource "aws_cloudwatch_log_group" "postgresql" {
-  name              = "/aws/rds/instance/${aws_db_instance.main.identifier}/postgresql"
-  retention_in_days = var.log_retention_days
+# # CloudWatch Log Group for PostgreSQL logs
+# resource "aws_cloudwatch_log_group" "postgresql" {
+#   name              = "/aws/rds/instance/${aws_db_instance.main.identifier}/postgresql"
+#   retention_in_days = var.log_retention_days
 
-  tags = var.tags
-}
+#   tags = var.tags
+# }
 
 # RDS Read Replica (optional, for high availability)
 resource "aws_db_instance" "read_replica" {
