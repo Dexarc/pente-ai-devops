@@ -1,16 +1,15 @@
-# modules/elasticache_redis/outputs.tf
-
-output "redis_endpoint_address" {
-  description = "The DNS address of the ElastiCache Redis cluster primary endpoint."
-  value       = module.redis.replication_group_primary_endpoint_address
-}
-
-output "redis_cluster_arn" {
-  description = "The ARN of the ElastiCache Redis replication group."
-  value       = module.redis.replication_group_arn
-}
-
-output "redis_cluster_id" {
+# --- ElastiCache Redis Outputs ---
+output "redis_replication_group_id" {
   description = "The ID of the ElastiCache Redis replication group."
-  value       = module.redis.replication_group_id
+  value       = aws_elasticache_replication_group.main.replication_group_id
+}
+
+output "redis_primary_endpoint_address" {
+  description = "The primary endpoint address of the Redis replication group."
+  value       = aws_elasticache_replication_group.main.primary_endpoint_address
+}
+
+output "redis_port" {
+  description = "The port number of the Redis replication group."
+  value       = aws_elasticache_replication_group.main.port
 }

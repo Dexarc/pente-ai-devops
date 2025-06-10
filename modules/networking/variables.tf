@@ -1,23 +1,21 @@
-variable "vpc_cidr" {
-  description = "CIDR block for VPC"
+# =============================================================================
+# variables.tf
+# =============================================================================
+
+variable "project_name" {
+  description = "Name of the project"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
 variable "environment" {
-  description = "Environment name (e.g., dev, staging, prod)"
+  description = "Environment name (dev, staging, prod)"
   type        = string
 }
 
-variable "project_name" {
-  description = "Name of the project for resource naming"
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
-}
-
-variable "availability_zones" {
-  description = "List of availability zones to use"
-  type        = list(string)
-  default     = ["us-east-1a", "us-east-1b"]
+  default     = "10.0.0.0/16"
 }
 
 variable "public_subnet_cidrs" {
@@ -38,40 +36,40 @@ variable "database_subnet_cidrs" {
   default     = ["10.0.100.0/24", "10.0.200.0/24"]
 }
 
-variable "enable_nat_gateway" {
-  description = "Should be true to provision NAT Gateways for each private subnet"
-  type        = bool
-  default     = true
-}
-
-variable "single_nat_gateway" {
-  description = "Should be true to provision a single shared NAT Gateway across all private subnets"
-  type        = bool
-  default     = false
+variable "elasticache_subnet_cidrs" {
+  description = "CIDR blocks for ElastiCache subnets"
+  type        = list(string)
+  default     = ["10.0.110.0/24", "10.0.210.0/24"]
 }
 
 variable "enable_dns_hostnames" {
-  description = "Should be true to enable DNS hostnames in the VPC"
+  description = "Enable DNS hostnames in the VPC"
   type        = bool
   default     = true
 }
 
 variable "enable_dns_support" {
-  description = "Should be true to enable DNS support in the VPC"
+  description = "Enable DNS support in the VPC"
   type        = bool
   default     = true
 }
 
 variable "enable_flow_logs" {
-  description = "Whether to enable VPC Flow Logs"
+  description = "Enable VPC Flow Logs"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "flow_logs_retention_days" {
-  description = "Retention period for VPC Flow Logs"
+  description = "CloudWatch log group retention period for VPC Flow Logs"
   type        = number
-  default     = 60
+  default     = 14
+}
+
+variable "availability_zones" {
+  description = "List of availability zones to use"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"]
 }
 
 variable "common_tags" {
@@ -79,3 +77,4 @@ variable "common_tags" {
   type        = map(string)
   default     = {}
 }
+

@@ -1,35 +1,49 @@
-# modules/elasticache_redis/main.tf
+# NOTE: The aws_elasticache_subnet_group is created by the main VPC raw resources.
+# Ensure 'var.elasticache_subnet_group_name' is correctly passed from there.
 
-module "redis" {
-  source  = "terraform-aws-modules/elasticache/aws"
-  version = "1.6.0"
-
+# --- ElastiCache Replication Group (Redis Cluster) ---
+resource "aws_elasticache_replication_group" "main" {
   replication_group_id          = "${var.project_name}-${var.environment}-redis"
   description                   = "Redis cluster for ${var.project_name}-${var.environment}"
   engine                        = "redis"
-  engine_version                = "7.0" # Stable Redis version
-  port                          = 6379 # Default Redis port
-
+  engine_version                = var.engine_version # Use variable for version flexibility
+  port                          = 6379
   node_type = var.elasticache_node_type
 
-  # Cluster size for replication (2 nodes for demonstrating a "cluster")
-  num_cache_clusters         = 2
+  # num_cache_clusters: Total number of nodes in the cluster (primary + replicas)
+  # For a simple replicated cluster (1 primary, 1 replica), this is 2.
+  num_cache_clusters         = var.num_cache_clusters # Typically 2 for 1 primary, 1 replica
   automatic_failover_enabled = true
 
-  # Subnet Group (provided by the VPC module)
   subnet_group_name = var.elasticache_subnet_group_name
-
-  # Security Groups
   security_group_ids = [var.elasticache_security_group_id]
 
-  # Encryption (KMS for at-rest, in-transit is default for Redis 6.0+)
+  # Encryption
   transit_encryption_enabled = true
   at_rest_encryption_enabled = true
-  kms_key_arn                = var.kms_elasticache_key_arn
+  # kms_key_arn in module maps to kms_key_id in raw resource
+  kms_key_id                = var.kms_elasticache_key_arn
 
-  # Backup & Maintenance (minimal retention for cost savings)
-  snapshot_retention_limit = 1 # 1 day for minimal cost
-  maintenance_window       = "sun:05:00-sun:06:00"
+  # Backup & Maintenance
+  snapshot_retention_limit = var.snapshot_retention_limit
+  maintenance_window       = var.maintenance_window
 
-  tags = var.tags
+  # CloudWatch Log Exports
+  log_delivery_configuration {
+    destination      = aws_cloudwatch_log_group.redis_logs.name
+    destination_type = "cloudwatch-logs"
+    log_format       = "json"
+    log_type         = "engine-log"
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-${var.environment}-redis"
+  })
+}
+
+# CloudWatch Log Group for Redis Logs 
+resource "aws_cloudwatch_log_group" "redis_logs" {
+  name              = "/aws/elasticache/redis/${var.project_name}-${var.environment}"
+  retention_in_days = var.log_retention_days
+  tags              = var.tags
 }

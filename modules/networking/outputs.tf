@@ -1,117 +1,128 @@
 # VPC Outputs
 output "vpc_id" {
   description = "ID of the VPC"
-  value       = module.vpc.vpc_id
+  value       = aws_vpc.main.id
 }
 
 output "vpc_cidr_block" {
-  description = "The CIDR block of the VPC"
-  value       = module.vpc.vpc_cidr_block
+  description = "CIDR block of the VPC"
+  value       = aws_vpc.main.cidr_block
 }
 
 output "vpc_arn" {
-  description = "The ARN of the VPC"
-  value       = module.vpc.vpc_arn
+  description = "ARN of the VPC"
+  value       = aws_vpc.main.arn
+}
+
+# Internet Gateway
+output "igw_id" {
+  description = "ID of the Internet Gateway"
+  value       = aws_internet_gateway.main.id
+}
+
+# NAT Gateway
+output "nat_gateway_id" {
+  description = "ID of the NAT Gateway"
+  value       = aws_nat_gateway.main.id
+}
+
+output "nat_gateway_public_ip" {
+  description = "Public IP address of the NAT Gateway"
+  value       = aws_eip.nat.public_ip
 }
 
 # Subnet Outputs
-output "public_subnets" {
-  description = "List of IDs of public subnets"
-  value       = module.vpc.public_subnets
+output "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  value       = aws_subnet.public[*].id
 }
 
-output "private_subnets" {
-  description = "List of IDs of private subnets"
-  value       = module.vpc.private_subnets
+output "private_subnet_ids" {
+  description = "List of private subnet IDs"
+  value       = aws_subnet.private[*].id
 }
 
-output "database_subnets" {
-  description = "List of IDs of database subnets"
-  value       = module.vpc.database_subnets
+output "database_subnet_ids" {
+  description = "List of database subnet IDs"
+  value       = aws_subnet.database[*].id
 }
 
-output "public_subnet_cidrs" {
-  description = "List of CIDR blocks of public subnets"
-  value       = var.public_subnet_cidrs
+output "elasticache_subnet_ids" {
+  description = "List of ElastiCache subnet IDs"
+  value       = aws_subnet.elasticache[*].id
 }
 
-output "private_subnet_cidrs" {
-  description = "List of CIDR blocks of private subnets"
-  value       = var.private_subnet_cidrs
+# Subnet Maps 
+output "public_subnet_map" {
+  description = "Map of AZ to public subnet ID"
+  value       = local.public_subnet_map
 }
 
-output "database_subnet_cidrs" {
-  description = "List of CIDR blocks of database subnets"
-  value       = var.database_subnet_cidrs
+output "private_subnet_map" {
+  description = "Map of AZ to private subnet ID"
+  value       = local.private_subnet_map
 }
 
-# Availability Zone Outputs
-output "availability_zones" {
-  description = "List of availability zones used"
-  value       = local.azs
+output "database_subnet_map" {
+  description = "Map of AZ to database subnet ID"
+  value       = local.database_subnet_map
 }
 
-# Gateway Outputs
-output "internet_gateway_id" {
-  description = "The ID of the Internet Gateway"
-  value       = module.vpc.igw_id
-}
-
-output "nat_gateway_ids" {
-  description = "List of IDs of the NAT Gateways"
-  value       = module.vpc.natgw_ids
-}
-
-output "nat_public_ips" {
-  description = "List of public Elastic IPs created for AWS NAT Gateway"
-  value       = module.vpc.nat_public_ips
-}
-
-# Route Table Outputs
-output "public_route_table_ids" {
-  description = "List of IDs of the public route tables"
-  value       = module.vpc.public_route_table_ids
-}
-
-output "private_route_table_ids" {
-  description = "List of IDs of the private route tables"
-  value       = module.vpc.private_route_table_ids
-}
-
-output "database_route_table_ids" {
-  description = "List of IDs of the database route tables"
-  value       = module.vpc.database_route_table_ids
+output "elasticache_subnet_map" {
+  description = "Map of AZ to ElastiCache subnet ID"
+  value       = local.elasticache_subnet_map
 }
 
 # Subnet Group Outputs
 output "database_subnet_group_name" {
   description = "Name of the database subnet group"
-  value       = module.vpc.database_subnet_group_name
+  value       = aws_db_subnet_group.main.name
 }
 
 output "database_subnet_group_id" {
   description = "ID of the database subnet group"
-  value       = module.vpc.database_subnet_group
+  value       = aws_db_subnet_group.main.id
 }
 
 output "elasticache_subnet_group_name" {
   description = "Name of the ElastiCache subnet group"
-  value       = module.vpc.database_subnet_group_name
+  value       = aws_elasticache_subnet_group.main.name
 }
 
 output "elasticache_subnet_group_id" {
   description = "ID of the ElastiCache subnet group"
-  value       = module.vpc.database_subnet_group
+  value       = aws_elasticache_subnet_group.main.id
 }
 
-# VPC Flow Logs
-output "vpc_flow_log_id" {
-  description = "The ID of the Flow Log resource"
-  value       = module.vpc.vpc_flow_log_id
+# Route Table Outputs
+output "public_route_table_id" {
+  description = "ID of the public route table"
+  value       = aws_route_table.public.id
 }
 
-# Useful for other modules
-output "default_security_group_id" {
-  description = "The ID of the security group created by default on VPC creation"
-  value       = module.vpc.default_security_group_id
+output "private_route_table_id" {
+  description = "ID of the private route table"
+  value       = aws_route_table.private.id
+}
+
+output "database_route_table_id" {
+  description = "ID of the database route table"
+  value       = aws_route_table.database.id
+}
+
+# Network ACL Outputs
+output "default_network_acl_id" {
+  description = "ID of the default network ACL"
+  value       = aws_default_network_acl.default.id
+}
+
+output "database_network_acl_id" {
+  description = "ID of the database network ACL"
+  value       = aws_network_acl.database.id
+}
+
+# Availability Zones
+output "availability_zones" {
+  description = "List of availability zones used"
+  value       = local.azs
 }

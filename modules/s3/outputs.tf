@@ -1,21 +1,9 @@
-# outputs.tf
-
 output "static_assets_bucket_id" {
-  description = "The ID (name) of the S3 bucket for static assets."
-  value       = module.static_assets_bucket.s3_bucket_id
-}
-
-output "static_assets_bucket_arn" {
-  description = "The ARN of the S3 bucket for static assets."
-  value       = module.static_assets_bucket.s3_bucket_arn
+  description = "The ID of the S3 bucket for static assets."
+  value       = aws_s3_bucket.static_assets.id
 }
 
 output "terraform_state_bucket_id" {
-  description = "The ID (name) of the S3 bucket for Terraform state."
-  value       = module.terraform_state_bucket.s3_bucket_id
-}
-
-output "terraform_state_bucket_arn" {
-  description = "The ARN of the S3 bucket for Terraform state."
-  value       = module.terraform_state_bucket.s3_bucket_arn
+  description = "The ID of the S3 bucket for Terraform state."
+  value       = aws_s3_bucket.terraform_state.id
 }
