@@ -29,14 +29,19 @@ const dbPasswordSsmParam = process.env.DB_PASSWORD_SSM_PARAM;
 
 // IMPROVEMENT: Add validation for required environment variables
 function validateEnvironmentVariables() {
-    const required = ['DB_HOST', 'DB_NAME', 'DB_USERNAME_SSM_PARAM', 'DB_PASSWORD_SSM_PARAM'];
-    const missing = required.filter(env => !process.env[env]);
-    
-    if (missing.length > 0) {
-        console.error('ERROR: Missing required environment variables:', missing.join(', '));
+    const requiredVars = [
+        'DB_HOST',
+        'DB_NAME',
+        'DB_USERNAME_SSM_PARAM',
+        'DB_PASSWORD_SSM_PARAM'
+    ];
+    const missingVars = requiredVars.filter(envVar => !process.env[envVar]);
+
+    if (missingVars.length > 0) {
+        // THIS IS THE LINE YOU NEED TO CHANGE:
+        console.error('ERROR: Missing required environment variables:', ...missingVars); // <--- CHANGE THIS LINE
         process.exit(1);
     }
-    
     console.log('✅ All required environment variables are present');
 }
 
@@ -313,19 +318,28 @@ process.on('SIGINT', () => {
     process.exit(0);
 });
 
-// Start the server with validation
-validateEnvironmentVariables();
+// Export functions for testing
+module.exports = {
+    app, // For testing Express routes
+    getSsmParameter,
+    getGreetingFromDb,
+    validateEnvironmentVariables // Export if you want to test its logic directly
+};
 
-app.listen(port, () => {
-    console.log('🚀 ===== Hello-DB-App Started =====');
-    console.log(`📡 Server listening on port ${port}`);
-    console.log(`🗄️  Database: ${dbHost}:${dbPort}/${dbName}`);
-    console.log(`🔐 SSM Parameters: ${dbUsernameSsmParam}, ${dbPasswordSsmParam}`);
-    console.log(`🌍 AWS Region: ${awsRegion}`);
-    console.log(`📝 Endpoints:`);
-    console.log(`   - http://localhost:${port}/       (Main app)`);
-    console.log(`   - http://localhost:${port}/health (Health check)`);
-    console.log(`   - http://localhost:${port}/debug  (Debug info)`);
-    console.log('💡 Ensure the "greetings" table exists with columns: message, created_at');
-    console.log('=====================================');
-});
+// Start the server only if this file is run directly
+if (require.main === module) {
+    validateEnvironmentVariables();
+    app.listen(port, () => {
+        console.log('🚀 ===== Hello-DB-App Started =====');
+        console.log(`📡 Server listening on port ${port}`);
+        console.log(`🗄️  Database: ${dbHost}:${dbPort}/${dbName}`);
+        console.log(`🔐 SSM Parameters: ${dbUsernameSsmParam}, ${dbPasswordSsmParam}`);
+        console.log(`🌍 AWS Region: ${awsRegion}`);
+        console.log(`📝 Endpoints:`);
+        console.log(`   - http://localhost:${port}/       (Main app)`);
+        console.log(`   - http://localhost:${port}/health (Health check)`);
+        console.log(`   - http://localhost:${port}/debug  (Debug info)`);
+        console.log('💡 Ensure the "greetings" table exists with columns: message, created_at');
+        console.log('=====================================');
+    });
+}
