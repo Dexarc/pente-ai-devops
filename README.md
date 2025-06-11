@@ -1,5 +1,6 @@
 # AWS DevOps Engineer Skill Test Solution
 
+
 This repository contains a comprehensive solution for the AWS DevOps Engineer Skill Test, focusing on designing, provisioning, securing, deploying, monitoring, and optimizing a complete AWS-native infrastructure. It also demonstrates integration with Google Gemini for code quality and security checks within a CI/CD pipeline.
 
 ## Table of Contents
