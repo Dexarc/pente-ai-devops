@@ -17,6 +17,10 @@ output "db_instance_endpoint" {
   description = "RDS instance endpoint"
   value       = aws_db_instance.main.endpoint
 }
+output "db_instance_address" {
+  description = "RDS instance endpoint address (hostname only)"
+  value       = aws_db_instance.main.address
+}
 
 output "db_instance_hosted_zone_id" {
   description = "RDS instance hosted zone ID"

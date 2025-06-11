@@ -103,7 +103,7 @@ module "ecs_service" {
   ecs_task_role_arn           = module.security.ecs_task_role_arn
 
   # Database Connection Details (from RDS module outputs and Security module SSM)
-  db_endpoint_address        = module.rds.db_instance_endpoint
+  db_endpoint_address        = module.rds.db_instance_address
   db_port                    = module.rds.db_instance_port
   db_name                    = var.db_name
   db_username_ssm_param_name = module.rds.db_username_ssm_parameter_name
