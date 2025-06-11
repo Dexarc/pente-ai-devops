@@ -11,11 +11,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "pente-dev-terraform-state"
-    key            = "terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    use_lockfile   = true
+    bucket       = "pente-dev-terraform-state"
+    key          = "terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
