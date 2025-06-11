@@ -223,13 +223,14 @@ resource "aws_ecs_service" "app_service" {
 # 1. Define the Scalable Target: ECS Service Desired Count
 resource "aws_appautoscaling_target" "ecs_service_scale_target" {
   service_namespace  = "ecs"
-  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.app_service.name}"
+  resource_id        = "service/${var.ecs_cluster_arn}/${aws_ecs_service.app_service.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   min_capacity       = var.ecs_min_capacity
   max_capacity       = var.ecs_max_capacity
 
   depends_on = [aws_ecs_service.app_service]
 }
+
 
 # 2. Define Scaling Policy for CPU Utilization
 resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {

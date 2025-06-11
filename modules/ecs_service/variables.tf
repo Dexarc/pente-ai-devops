@@ -115,6 +115,11 @@ variable "ecs_desired_count" {
   default     = 1
 }
 
+variable "ecs_cluster_arn" {
+  description = "The ARN of the ECS cluster where the service will be deployed."
+  type        = string
+}
+
 
 # --- Database Connection Details ---
 variable "db_endpoint_address" {
