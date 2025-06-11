@@ -30,7 +30,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./app
-        run: npm ci
+        run: npm install
 
       - name: Run ESLint (Linting)
         working-directory: ./app
