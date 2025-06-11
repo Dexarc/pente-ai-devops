@@ -59,6 +59,12 @@ variable "rds_cpu_alarm_threshold_percent" {
   default     = 70
 }
 
+variable "rds_read_replica_lag_threshold" {
+  description = "Threshold for RDS read replica lag in seconds. Only used if read replica is created."
+  type        = number
+  default     = 100
+}
+
 variable "alb_request_count_low_threshold" {
   description = "Threshold for ALB request count low alarm. Only used if ALB ARN is provided."
   type        = number

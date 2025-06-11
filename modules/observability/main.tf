@@ -252,7 +252,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_replica_lag_high" {
   namespace           = "AWS/RDS"
   period              = "300" # Every 5 minutes
   statistic           = "Average"
-  threshold           = 100 # 100 milliseconds
+  threshold           = var.rds_read_replica_lag_threshold
   alarm_description   = "RDS Read Replica lag is too high (over 100ms)"
 
   dimensions = {

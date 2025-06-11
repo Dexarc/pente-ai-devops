@@ -136,6 +136,7 @@ module "observability" {
   ecs_memory_alarm_threshold_percent   = var.ecs_memory_alarm_threshold_percent
   rds_cpu_alarm_threshold_percent      = var.rds_cpu_alarm_threshold_percent
   alb_5xx_error_rate_threshold_percent = var.alb_5xx_error_rate_threshold_percent
+  rds_read_replica_lag_threshold       = var.rds_read_replica_lag_threshold
 
   lambda_code_zip_path = var.lambda_code_zip_path
   log_retention_days   = var.log_retention_days

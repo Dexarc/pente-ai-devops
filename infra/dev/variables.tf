@@ -180,6 +180,11 @@ variable "rds_cpu_alarm_threshold_percent" {
   type        = number
 }
 
+variable "rds_read_replica_lag_threshold" {
+  description = "Threshold for RDS read replica lag in seconds."
+  type        = number
+}
+
 variable "alb_5xx_error_rate_threshold_percent" {
   description = "Threshold percentage for ALB HTTP 5xx error rate alarm."
   type        = number
