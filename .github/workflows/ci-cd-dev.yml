@@ -33,7 +33,6 @@ jobs:
         with:
           node-version: '22'
 
-
       - name: Install dependencies
         working-directory: ./app
         run: npm install
