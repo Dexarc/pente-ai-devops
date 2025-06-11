@@ -184,19 +184,31 @@ jobs:
         run: terraform apply tfplan
 
       # Step 5: Deploy new image to ECS with zero-downtime rolling update
+
       - name: Deploy to ECS (Zero-downtime Rolling Update)
         run: |
             IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.sha }}"
             
             echo "🚀 Deploying new image: $IMAGE_URI"
             
-            # Get current task definition
-            TASK_DEF=$(aws ecs describe-task-definition --task-definition ${{ env.ECS_SERVICE_NAME }} --query 'taskDefinition')
+            # Get the current task definition from the service
+            CURRENT_TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER_NAME }} \
+            --services ${{ env.ECS_SERVICE_NAME }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+            
+            echo "📋 Current task definition: $CURRENT_TASK_DEF"
+            
+            # Get task definition details
+            TASK_DEF=$(aws ecs describe-task-definition --task-definition $CURRENT_TASK_DEF --query 'taskDefinition')
             
             # Update image and register new task definition  
             echo $TASK_DEF | jq --arg IMAGE "$IMAGE_URI" '.containerDefinitions[0].image=$IMAGE | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.placementConstraints,.compatibilities,.registeredAt,.registeredBy)' > new-task-def.json
             
             NEW_TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
+            
+            echo "📋 New task definition: $NEW_TASK_DEF"
             
             # Update service with new image
             aws ecs update-service \
