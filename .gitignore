@@ -1,3 +1,5 @@
+.env
+node_modules
 **/**/.terraform
 **/.terragrunt-cache/
 **/.terraform.lock.hcl
@@ -6,3 +8,4 @@
 **/tfstate.backup
 **/terraform.tfstate
 **/terraform.tfstate.backup
+
