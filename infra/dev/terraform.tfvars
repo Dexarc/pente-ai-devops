@@ -7,18 +7,18 @@ aws_region   = "us-east-1"
 tags         = {}
 
 # Networking variables
-vpc_cidr_block        = "10.0.0.0/16"
-public_subnet_cidrs   = ["10.0.1.0/24", "10.0.2.0/24"]
-private_subnet_cidrs  = ["10.0.10.0/24", "10.0.20.0/24"]
-database_subnet_cidrs = ["10.0.100.0/24", "10.0.200.0/24"]
-availability_zones    = ["us-east-1a", "us-east-1b"]
+vpc_cidr_block         = "10.0.0.0/16"
+public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs   = ["10.0.10.0/24", "10.0.20.0/24"]
+database_subnet_cidrs  = ["10.0.100.0/24", "10.0.200.0/24"]
+availability_zones     = ["us-east-1a", "us-east-1b"]
 networking_common_tags = {}
 
 # RDS variables
-db_instance_class   = "db.t3.micro"
-db_name             = "app_db"
-apply_immediately   = false
-create_read_replica = true
+db_instance_class      = "db.t3.micro"
+db_name                = "app_db"
+apply_immediately      = false
+create_read_replica    = true
 replica_instance_class = null #same class as primary by default
 
 # ElastiCache variables
