@@ -1,114 +1,89 @@
-```mermaid
-graph TD
-    subgraph "AWS Cloud"
-        subgraph "Region (us-east-1)"
-            InternetGateway((Internet Gateway))
-
-            subgraph "VPC: pente-dev-vpc (10.0.0.0/16)"
-                subgraph "Network Tiers"
-                    PublicSubnetA["Public-A (10.0.1.0/24)"]
-                    PublicSubnetB["Public-B (10.0.2.0/24)"]
-
-                    PrivateSubnetA["Private-A (10.0.10.0/24)"]
-                    PrivateSubnetB["Private-B (10.0.20.0/24)"]
-
-                    DBSn_A["DB-A (10.0.100.0/24)"]
-                    DBSn_B["DB-B (10.0.200.0/24)"]
-                end
-
-                InternetGateway --- PublicSubnetA
-                InternetGateway --- PublicSubnetB
-
-                PublicSubnetA --- NATGatewayA(NAT Gateway A)
-                PublicSubnetB --- NATGatewayB(NAT Gateway B)
-
-                NATGatewayA --> PrivateSubnetA
-                NATGatewayB --> PrivateSubnetB
-
-                PrivateSubnetA --> AppLoadBalancer(ALB)
-                PrivateSubnetB --> AppLoadBalancer
-
-                AppLoadBalancer --> ECSCluster(ECS Cluster: pente-dev)
-                AppLoadBalancer -.->|HTTP/80| ECSCluster
-
-                ECSCluster -.->|Fargate| ECSTaskA(ECS Task: App Service)
-                ECSCluster -.->|Fargate| ECSTaskB(ECS Task: App Service)
-
-                ECSTaskA -.->|DB Connect| DBSn_A
-                ECSTaskB -.->|DB Connect| DBSn_B
-
-                DBSn_A --- RDS(RDS PostgreSQL DB - Multi-AZ)
-                DBSn_B --- RDS
-
-                RDS -.->|Read Replicas| RDSReplica(RDS Read Replica)
-
-                PrivateSubnetA --- ElastiCache((ElastiCache Redis))
-                PrivateSubnetB --- ElastiCache
-
-                ECSTaskA -.->|Read SSM| SSM((SSM Parameter Store))
-                ECSTaskB -.->|Read SSM| SSM
-
-                S3State([S3 Bucket: tfstate])
-                S3Assets([S3 Bucket: Static Assets])
-            end
-
-            subgraph "Security Services"
-                GuardDuty(GuardDuty)
-                AWSConfig(AWS Config Rules)
-                KMS(KMS Keys: RDS, S3, ElastiCache)
-            end
-
-            subgraph "Monitoring & Logging"
-                CloudWatch(CloudWatch)
-                AppLogGroupRaw[CloudWatch Log Group: App Raw Logs]
-                AppLogGroupSanitized[CloudWatch Log Group: App Sanitized Logs]
-                PiiStripperLambda(Lambda: PII Stripper)
-
-                AppLogGroupRaw -.->|Subscription Filter| PiiStripperLambda
-                PiiStripperLambda -.->|Write Sanitized Logs| AppLogGroupSanitized
-
-                ECSCluster -.->|Logs| AppLogGroupRaw
-                RDS -.->|Logs| CloudWatch
-                AppLoadBalancer -.->|Logs| CloudWatch
-
-                CloudWatch -.->|Metrics, Alarms| SNS((SNS Topic: Alerts))
-                CloudWatch -.->|Dashboard| CloudWatchDashboard(CloudWatch Dashboard)
-                AppLogGroupSanitized -.->|Display| CloudWatchDashboard
-                CloudWatch -.->|Display Metrics| CloudWatchDashboard
-            end
-
-            subgraph "CI/CD Pipeline"
-                GitHubRepo(GitHub Repo) -.->|Trigger PR/Push| GitHubActions(GitHub Actions)
-                GitHubActions -.->|Build| DockerImage([Docker Image])
-                GitHubActions -.->|Push| ECR([ECR Repository])
-                GitHubActions -.->|Deploy on merge| ECSCluster
-                GitHubActions -.->|Scan| GoogleGemini(Google Gemini API)
-                GoogleGemini -.->|Security Report| GitHubActions
-            end
-        end
-    end
-
-    classDef cicd fill:#f9f,stroke:#333,stroke-width:2px
-    classDef ai fill:#e0e,stroke:#333,stroke-width:2px
-    classDef lambda fill:#9cf,stroke:#333,stroke-width:2px
-    classDef dashboard fill:#cff,stroke:#333,stroke-width:2px
-    classDef notification fill:#f9f,stroke:#333,stroke-width:2px
-    classDef config fill:#cfc,stroke:#333,stroke-width:2px
-    classDef encryption fill:#ffc,stroke:#333,stroke-width:2px
-    classDef security fill:#fcc,stroke:#333,stroke-width:2px
-    classDef database fill:#fc9,stroke:#333,stroke-width:2px
-    classDef storage fill:#cc9,stroke:#333,stroke-width:2px
-    classDef container fill:#c9c,stroke:#333,stroke-width:2px
-
-    class GitHubActions cicd
-    class GoogleGemini ai
-    class PiiStripperLambda lambda
-    class CloudWatchDashboard dashboard
-    class SNS notification
-    class SSM config
-    class KMS encryption
-    class GuardDuty,AWSConfig security
-    class RDS,ElastiCache database
+graph TB
+    %% Internet and Entry Points
+    Internet([Internet]) --> IGW((Internet Gateway))
+    
+    %% Public Subnets
+    IGW --> PubA[Public Subnet A<br/>10.0.1.0/24]
+    IGW --> PubB[Public Subnet B<br/>10.0.2.0/24]
+    
+    %% NAT Gateways
+    PubA --> NATA[NAT Gateway A]
+    PubB --> NATB[NAT Gateway B]
+    
+    %% Private Subnets
+    NATA --> PrivA[Private Subnet A<br/>10.0.10.0/24]
+    NATB --> PrivB[Private Subnet B<br/>10.0.20.0/24]
+    
+    %% Load Balancer
+    PrivA --> ALB[Application Load Balancer]
+    PrivB --> ALB
+    
+    %% ECS Cluster and Tasks
+    ALB -->|HTTP/80| ECS[ECS Cluster: pente-dev]
+    ECS -->|Fargate| TaskA[ECS Task A<br/>App Service]
+    ECS -->|Fargate| TaskB[ECS Task B<br/>App Service]
+    
+    %% Database Subnets
+    TaskA --> DBA[DB Subnet A<br/>10.0.100.0/24]
+    TaskB --> DBB[DB Subnet B<br/>10.0.200.0/24]
+    
+    %% Database Services
+    DBA --> RDS[(RDS PostgreSQL<br/>Multi-AZ)]
+    DBB --> RDS
+    RDS --> RDSReplica[(Read Replica)]
+    
+    %% Cache
+    PrivA --> Cache((ElastiCache<br/>Redis))
+    PrivB --> Cache
+    
+    %% Configuration
+    TaskA --> SSM((SSM Parameter<br/>Store))
+    TaskB --> SSM
+    
+    %% Storage
+    S3State[S3: Terraform State]
+    S3Assets[S3: Static Assets]
+    
+    %% Security Services
+    Guard[GuardDuty]
+    Config[AWS Config Rules]
+    KMS[KMS Keys]
+    
+    %% Logging Pipeline
+    TaskA --> RawLogs[Raw Log Group]
+    TaskB --> RawLogs
+    RDS --> CW[CloudWatch]
+    ALB --> CW
+    
+    RawLogs -->|Subscription| PiiLambda[PII Stripper<br/>Lambda]
+    PiiLambda --> CleanLogs[Sanitized Log Group]
+    
+    CW --> Dashboard[CloudWatch<br/>Dashboard]
+    CleanLogs --> Dashboard
+    CW -->|Alerts| SNS((SNS Topic))
+    
+    %% CI/CD Pipeline
+    GitHub[GitHub Repo] -->|Trigger| Actions[GitHub Actions]
+    Actions -->|Build| Docker[Docker Image]
+    Actions -->|Push| ECR[ECR Repository]
+    Actions -->|Deploy| ECS
+    Actions -->|Scan| Gemini[Google Gemini API]
+    Gemini -->|Report| Actions
+    
+    %% Styling
+    classDef aws fill:#ff9900,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef compute fill:#f58536,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef database fill:#3f48cc,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef storage fill:#569a31,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef security fill:#dd344c,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef cicd fill:#6b46c1,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef monitoring fill:#0ea5e9,stroke:#232f3e,stroke-width:2px,color:#fff
+    classDef network fill:#64748b,stroke:#232f3e,stroke-width:2px,color:#fff
+    
+    class IGW,PubA,PubB,PrivA,PrivB,DBA,DBB,NATA,NATB network
+    class ALB,ECS,TaskA,TaskB compute
+    class RDS,RDSReplica,Cache database
     class S3State,S3Assets,ECR storage
-    class AppLoadBalancer container
-```
+    class Guard,Config,KMS,SSM security
+    class GitHub,Actions,Docker,Gemini cicd
+    class CW,Dashboard,RawLogs,CleanLogs,PiiLambda,SNS monitoring
