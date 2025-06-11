@@ -257,7 +257,7 @@ Based on the described architecture, here's a hypothetical breakdown of potentia
     * **Impact:** This optimization helps in reducing storage costs for infrequently accessed or historical data. While the direct financial impact might be small for a single application, it's a good practice that scales well across multiple projects and ensures that only actively used data resides in more expensive storage tiers. It also helps manage data retention policies efficiently.
     * **Current Scenario:** This has already been implemented in the dev environment.
 
-3. **Utilize Valkyrie Cache for Cost Reduction:**
-    * **Optimization:** Implementing **Valkyrie Cache** can significantly reduce the load on backend systems, such as databases, by caching frequently accessed data at the edge. This can lower the number of database queries, thereby reducing database load and costs associated with database I/O operations.
-    * **Impact:** By caching frequent queries or responses, Valkyrie Cache helps offload read-heavy workloads from your RDS instance, reducing the need for high compute or storage capacities on the database. This can lead to a significant reduction in the cost of database instances, particularly in scenarios where high read volumes are common.
+3. **Utilize Valkey Cache for Cost Reduction:**
+    * **Optimization:** Implementing **Valkey Cache** can significantly reduce the load on backend systems, such as databases, by caching frequently accessed data at the edge. This can lower the number of database queries, thereby reducing database load and costs associated with database I/O operations.
+    * **Impact:** By caching frequent queries or responses, Valkey Cache helps offload read-heavy workloads from your RDS instance, reducing the need for high compute or storage capacities on the database. This can lead to a significant reduction in the cost of database instances, particularly in scenarios where high read volumes are common.
 
