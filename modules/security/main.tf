@@ -101,6 +101,16 @@ data "aws_iam_policy_document" "ecs_task_ssm_policy" {
       "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.project_name}/${var.environment}/*"
     ]
   }
+
+  statement {
+    actions = [
+      "kms:Decrypt"
+    ]
+    # Grant permission on the specific KMS key used for RDS (aws_kms_key.rds)
+    resources = [
+      aws_kms_key.rds.arn # Reference the ARN of the RDS KMS key whihch encrypts the ssm db credentials
+    ]
+  }
 }
 
 # Data source for current AWS region and account ID, used for ARN construction
