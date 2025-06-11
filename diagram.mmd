@@ -1,0 +1,114 @@
+```mermaid
+graph TD
+    subgraph "AWS Cloud"
+        subgraph "Region (us-east-1)"
+            InternetGateway((Internet Gateway))
+
+            subgraph "VPC: pente-dev-vpc (10.0.0.0/16)"
+                subgraph "Network Tiers"
+                    PublicSubnetA["Public-A (10.0.1.0/24)"]
+                    PublicSubnetB["Public-B (10.0.2.0/24)"]
+
+                    PrivateSubnetA["Private-A (10.0.10.0/24)"]
+                    PrivateSubnetB["Private-B (10.0.20.0/24)"]
+
+                    DBSn_A["DB-A (10.0.100.0/24)"]
+                    DBSn_B["DB-B (10.0.200.0/24)"]
+                end
+
+                InternetGateway --- PublicSubnetA
+                InternetGateway --- PublicSubnetB
+
+                PublicSubnetA --- NATGatewayA(NAT Gateway A)
+                PublicSubnetB --- NATGatewayB(NAT Gateway B)
+
+                NATGatewayA --> PrivateSubnetA
+                NATGatewayB --> PrivateSubnetB
+
+                PrivateSubnetA --> AppLoadBalancer(ALB)
+                PrivateSubnetB --> AppLoadBalancer
+
+                AppLoadBalancer --> ECSCluster(ECS Cluster: pente-dev)
+                AppLoadBalancer -.->|HTTP/80| ECSCluster
+
+                ECSCluster -.->|Fargate| ECSTaskA(ECS Task: App Service)
+                ECSCluster -.->|Fargate| ECSTaskB(ECS Task: App Service)
+
+                ECSTaskA -.->|DB Connect| DBSn_A
+                ECSTaskB -.->|DB Connect| DBSn_B
+
+                DBSn_A --- RDS(RDS PostgreSQL DB - Multi-AZ)
+                DBSn_B --- RDS
+
+                RDS -.->|Read Replicas| RDSReplica(RDS Read Replica)
+
+                PrivateSubnetA --- ElastiCache((ElastiCache Redis))
+                PrivateSubnetB --- ElastiCache
+
+                ECSTaskA -.->|Read SSM| SSM((SSM Parameter Store))
+                ECSTaskB -.->|Read SSM| SSM
+
+                S3State([S3 Bucket: tfstate])
+                S3Assets([S3 Bucket: Static Assets])
+            end
+
+            subgraph "Security Services"
+                GuardDuty(GuardDuty)
+                AWSConfig(AWS Config Rules)
+                KMS(KMS Keys: RDS, S3, ElastiCache)
+            end
+
+            subgraph "Monitoring & Logging"
+                CloudWatch(CloudWatch)
+                AppLogGroupRaw[CloudWatch Log Group: App Raw Logs]
+                AppLogGroupSanitized[CloudWatch Log Group: App Sanitized Logs]
+                PiiStripperLambda(Lambda: PII Stripper)
+
+                AppLogGroupRaw -.->|Subscription Filter| PiiStripperLambda
+                PiiStripperLambda -.->|Write Sanitized Logs| AppLogGroupSanitized
+
+                ECSCluster -.->|Logs| AppLogGroupRaw
+                RDS -.->|Logs| CloudWatch
+                AppLoadBalancer -.->|Logs| CloudWatch
+
+                CloudWatch -.->|Metrics, Alarms| SNS((SNS Topic: Alerts))
+                CloudWatch -.->|Dashboard| CloudWatchDashboard(CloudWatch Dashboard)
+                AppLogGroupSanitized -.->|Display| CloudWatchDashboard
+                CloudWatch -.->|Display Metrics| CloudWatchDashboard
+            end
+
+            subgraph "CI/CD Pipeline"
+                GitHubRepo(GitHub Repo) -.->|Trigger PR/Push| GitHubActions(GitHub Actions)
+                GitHubActions -.->|Build| DockerImage([Docker Image])
+                GitHubActions -.->|Push| ECR([ECR Repository])
+                GitHubActions -.->|Deploy on merge| ECSCluster
+                GitHubActions -.->|Scan| GoogleGemini(Google Gemini API)
+                GoogleGemini -.->|Security Report| GitHubActions
+            end
+        end
+    end
+
+    classDef cicd fill:#f9f,stroke:#333,stroke-width:2px
+    classDef ai fill:#e0e,stroke:#333,stroke-width:2px
+    classDef lambda fill:#9cf,stroke:#333,stroke-width:2px
+    classDef dashboard fill:#cff,stroke:#333,stroke-width:2px
+    classDef notification fill:#f9f,stroke:#333,stroke-width:2px
+    classDef config fill:#cfc,stroke:#333,stroke-width:2px
+    classDef encryption fill:#ffc,stroke:#333,stroke-width:2px
+    classDef security fill:#fcc,stroke:#333,stroke-width:2px
+    classDef database fill:#fc9,stroke:#333,stroke-width:2px
+    classDef storage fill:#cc9,stroke:#333,stroke-width:2px
+    classDef container fill:#c9c,stroke:#333,stroke-width:2px
+
+    class GitHubActions cicd
+    class GoogleGemini ai
+    class PiiStripperLambda lambda
+    class CloudWatchDashboard dashboard
+    class SNS notification
+    class SSM config
+    class KMS encryption
+    class GuardDuty,AWSConfig security
+    class RDS,ElastiCache database
+    class S3State,S3Assets,ECR storage
+    class AppLoadBalancer container
+```
