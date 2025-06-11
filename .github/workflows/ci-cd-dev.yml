@@ -52,7 +52,12 @@ jobs:
       - name: Terraform Format Check
         working-directory: ./infra/${{env.project_env}}
         run: terraform fmt -check -recursive
-
+        # Ensure Terraform files are formatted correctly            
+      
+      - name: Terraform Init
+        working-directory: ./infra/${{env.project_env}}
+        run: terraform init
+      
       - name: Terraform Validate
         working-directory: ./infra/${{env.project_env}}
         run: terraform validate
