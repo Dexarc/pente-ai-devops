@@ -200,6 +200,11 @@ variable "alb_5xx_error_rate_threshold_percent" {
   type        = number
 }
 
+variable "create_alb_alarms" {
+  description = "Flag to create ALB alarms."
+  type        = bool
+}
+
 variable "lambda_code_zip_path" {
   description = "Path to the ZIP file containing the PII stripping Lambda function code (relative to terraform root)."
   type        = string

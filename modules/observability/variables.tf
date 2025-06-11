@@ -110,3 +110,9 @@ variable "ecs_app_log_group_name" {
   description = "The name of the CloudWatch Log Group where ECS application logs are sent."
   type        = string
 }
+
+variable "create_alb_alarms" {
+  description = "Flag to create ALB alarms. Set to true if ALB ARN is provided."
+  type        = bool
+  default     = true
+}

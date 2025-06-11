@@ -132,6 +132,7 @@ module "observability" {
   ecs_service_name            = module.ecs_service.ecs_service_name
   db_instance_identifier      = module.rds.db_instance_identifier # Assumes rds module outputs 'db_instance_identifier'
   alb_arn                     = module.ecs_service.alb_arn        # Assumes ecs_service module outputs 'alb_arn'
+  create_alb_alarms           = var.create_alb_alarms
   rds_read_replica_identifier = module.rds.read_replica_identifier
 
   alert_email                          = var.alert_email

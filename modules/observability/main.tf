@@ -192,7 +192,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
 
 # ALB HTTP 5xx Error Rate Alarm (Requirement)
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_error_rate_high" {
-  count = var.alb_arn != null ? 1 : 0 # Only create if ALB ARN is provided
+  count = var.create_alb_alarms ? 1 : 0 # Only create if ALB ARN is provided
 
   alarm_name          = "${var.project_name}-${var.environment}-alb-5xx-error-rate-high"
   comparison_operator = "GreaterThanOrEqualToThreshold"

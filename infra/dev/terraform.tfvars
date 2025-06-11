@@ -53,6 +53,7 @@ ecs_memory_alarm_threshold_percent   = 80
 rds_cpu_alarm_threshold_percent      = 70
 rds_read_replica_lag_threshold       = 100 #in ms
 alb_5xx_error_rate_threshold_percent = 5
+create_alb_alarms                    = true
 
 # Lambda PII Stripper Path
 lambda_code_zip_path = "../../infra/dev/lambda_code/pii_stripper.zip"
