@@ -58,7 +58,7 @@ jobs:
           terraform_version: 1.12.0
 
       - name: Terraform Format Check
-        working-directory: ./infra/${{env.project_env}}
+        working-directory: ./
         run: terraform fmt -check -recursive
         # Ensure Terraform files are formatted correctly            
       
@@ -67,7 +67,7 @@ jobs:
         run: terraform init
       
       - name: Terraform Validate
-        working-directory: ./infra/${{env.project_env}}
+        working-directory: ./
         run: terraform validate
 
       - name: Get the Commit SHA

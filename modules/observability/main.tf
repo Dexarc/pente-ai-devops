@@ -45,8 +45,8 @@ resource "aws_iam_policy" "pii_stripper_lambda_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
@@ -73,12 +73,12 @@ resource "aws_cloudwatch_log_group" "sanitized_app_logs" {
 
 # 4. Lambda Function Resource
 resource "aws_lambda_function" "pii_stripper" {
-  function_name    = "${var.project_name}-${var.environment}-pii-stripper"
-  handler          = "index.handler"
-  runtime          = "nodejs20.x"
-  role             = aws_iam_role.pii_stripper_lambda_role.arn
-  timeout          = 30
-  memory_size      = 128
+  function_name = "${var.project_name}-${var.environment}-pii-stripper"
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
+  role          = aws_iam_role.pii_stripper_lambda_role.arn
+  timeout       = 30
+  memory_size   = 128
 
   filename         = var.lambda_code_zip_path
   source_code_hash = filebase64sha256(var.lambda_code_zip_path)
@@ -86,7 +86,7 @@ resource "aws_lambda_function" "pii_stripper" {
   environment {
     variables = {
       SANITIZED_LOG_GROUP_NAME = aws_cloudwatch_log_group.sanitized_app_logs.name
-    #   AWS_REGION               = var.aws_region # AWS region is automatically set by Lambda
+      #   AWS_REGION               = var.aws_region # AWS region is automatically set by Lambda
     }
   }
 
@@ -101,7 +101,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_logs" {
   principal     = "logs.${var.aws_region}.amazonaws.com"
   # Source ARN must be the original application log group
   # The test document mentions "Centralize application logs in CloudWatch Logs" 
-  source_arn    = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.project_name}-${var.environment}-app:*"
+  source_arn = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.project_name}-${var.environment}-app:*"
 
   depends_on = [
     aws_lambda_function.pii_stripper
@@ -250,9 +250,9 @@ resource "aws_cloudwatch_metric_alarm" "rds_replica_lag_high" {
   evaluation_periods  = "2"                    # Evaluate over 2 consecutive periods
   metric_name         = "ReplicaLag"
   namespace           = "AWS/RDS"
-  period              = "300"                  # Every 5 minutes
+  period              = "300" # Every 5 minutes
   statistic           = "Average"
-  threshold           = 100                    # 100 milliseconds
+  threshold           = 100 # 100 milliseconds
   alarm_description   = "RDS Read Replica lag is too high (over 100ms)"
 
   dimensions = {

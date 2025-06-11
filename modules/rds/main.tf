@@ -5,13 +5,13 @@
 
 # Generate a strong random password for the database
 resource "random_password" "db_master_password" {
-  length         = 32
-  special        = true
+  length           = 32
+  special          = true
   override_special = "!#$%^&*()-_=+.?[]{}<>" # Valid special characters for RDS
-  min_lower      = 1
-  min_upper      = 1
-  min_numeric    = 1
-  min_special    = 1
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
 }
 
 # Store the master username in SSM Parameter Store
@@ -42,23 +42,23 @@ resource "aws_ssm_parameter" "db_password" {
 resource "aws_db_parameter_group" "main" {
   family = "postgres17"
   # It's good to end name_prefix with a hyphen, so Terraform adds a clean suffix
-  name_prefix   = "${var.project_name}-${var.environment}-db-params-"
+  name_prefix = "${var.project_name}-${var.environment}-db-params-"
 
   parameter {
-    name  = "log_statement"
-    value = "all"
+    name         = "log_statement"
+    value        = "all"
     apply_method = "immediate"
   }
 
   parameter {
-    name  = "log_min_duration_statement"
-    value = "1000"
+    name         = "log_min_duration_statement"
+    value        = "1000"
     apply_method = "immediate"
   }
 
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
     apply_method = "pending-reboot"
   }
 
@@ -113,7 +113,7 @@ resource "aws_db_instance" "main" {
   max_allocated_storage = 100
   storage_type          = "gp2"
   storage_encrypted     = true
-  kms_key_id           = var.kms_rds_key_arn
+  kms_key_id            = var.kms_rds_key_arn
 
   # Database Configuration
   db_name  = var.db_name
@@ -128,15 +128,15 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false
 
   # Backup Configuration
-  backup_retention_period   = 7
-  backup_window            = "03:00-04:00"
-  maintenance_window       = "sun:04:00-sun:05:00"
+  backup_retention_period    = 7
+  backup_window              = "03:00-04:00"
+  maintenance_window         = "sun:04:00-sun:05:00"
   auto_minor_version_upgrade = true
-  skip_final_snapshot      = true
-  deletion_protection      = false # For production, consider true
+  skip_final_snapshot        = true
+  deletion_protection        = false # For production, consider true
 
   # Performance Insights
-  performance_insights_enabled = true
+  performance_insights_enabled          = true
   performance_insights_retention_period = 7
 
   # Enhanced Monitoring
@@ -182,21 +182,21 @@ resource "aws_db_instance" "read_replica" {
   multi_az               = false # Read replicas are commonly single AZ, set explicitly
 
   # Storage Configuration - MUST BE EXPLICITLY SET & ALIGNED WITH PRIMARY
-  allocated_storage     = aws_db_instance.main.allocated_storage # Match primary
-  storage_type          = aws_db_instance.main.storage_type      # Match primary
-  storage_encrypted     = aws_db_instance.main.storage_encrypted # Match primary (should be true)
-  kms_key_id           = var.kms_rds_key_arn                   # Match primary's KMS key for consistency
+  allocated_storage = aws_db_instance.main.allocated_storage # Match primary
+  storage_type      = aws_db_instance.main.storage_type      # Match primary
+  storage_encrypted = aws_db_instance.main.storage_encrypted # Match primary (should be true)
+  kms_key_id        = var.kms_rds_key_arn                    # Match primary's KMS key for consistency
 
   # Backup Configuration - Explicitly set for replica (usually 0)
-  backup_retention_period   = 0                     # Replicas typically do not have backups
-  skip_final_snapshot    = true                   # Skip final snapshot for replicas
+  backup_retention_period = 0    # Replicas typically do not have backups
+  skip_final_snapshot     = true # Skip final snapshot for replicas
 
   # Other important settings
   auto_minor_version_upgrade = true
-  deletion_protection      = false # Replicas often don't need deletion protection
+  deletion_protection        = false # Replicas often don't need deletion protection
 
   # Performance Insights (if enabled on primary and desired on replica)
-  performance_insights_enabled = true
+  performance_insights_enabled          = true
   performance_insights_retention_period = 7
 
   # Enhanced Monitoring (if enabled on primary and desired on replica)

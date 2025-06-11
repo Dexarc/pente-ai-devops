@@ -47,10 +47,10 @@ locals {
       width  = 24
       height = 8
       properties = {
-        query   = "SOURCE '/ecs/${var.project_name}-${var.environment}-app-sanitized'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20"
-        region  = var.aws_region
-        title   = "Sanitized Application Logs"
-        view    = "table"
+        query  = "SOURCE '/ecs/${var.project_name}-${var.environment}-app-sanitized'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20"
+        region = var.aws_region
+        title  = "Sanitized Application Logs"
+        view   = "table"
       }
     }
   ]
@@ -76,7 +76,7 @@ locals {
       }
     }
   ] : []
-  
+
   # Conditional RDS Replica Lag Widget
   rds_replica_widget_list = var.create_read_replica ? [
     {
@@ -89,11 +89,11 @@ locals {
         metrics = [
           ["AWS/RDS", "ReplicaLag", "DBInstanceIdentifier", var.rds_read_replica_identifier]
         ]
-        view       = "timeSeries"
-        stacked    = false
-        region     = var.aws_region
-        title      = "RDS Replica Lag"
-        period     = 300
+        view    = "timeSeries"
+        stacked = false
+        region  = var.aws_region
+        title   = "RDS Replica Lag"
+        period  = 300
       }
     }
   ] : []

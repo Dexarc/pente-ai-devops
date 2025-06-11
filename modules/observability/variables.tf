@@ -77,7 +77,7 @@ variable "alb_5xx_error_rate_threshold_percent" {
   default     = 5
 }
 
-variable "create_read_replica"{
+variable "create_read_replica" {
   description = "Flag to create a read replica for the RDS instance."
   type        = bool
   default     = true

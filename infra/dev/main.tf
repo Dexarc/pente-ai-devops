@@ -90,7 +90,7 @@ module "ecs_service" {
   private_subnet_ids    = module.networking.private_subnet_ids
   database_subnet_cidrs = var.database_subnet_cidrs # For ECS task egress to DB
   ecs_cluster_id        = aws_ecs_cluster.main.id   # Reference the root-level ECS cluster
-  ecs_cluster_arn = aws_ecs_cluster.main.arn
+  ecs_cluster_arn       = aws_ecs_cluster.main.arn
 
   docker_image       = var.app_docker_image
   container_port     = var.app_container_port

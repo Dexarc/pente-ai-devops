@@ -26,7 +26,7 @@ resource "aws_internet_gateway" "main" {
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
   domain = "vpc"
-  
+
   depends_on = [aws_internet_gateway.main]
 
   tags = merge(local.common_tags, {
@@ -76,9 +76,9 @@ resource "aws_subnet" "database" {
   availability_zone = local.azs[count.index]
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_name}-${var.environment}-data-subnet-${count.index + 1}"
-    Type = "private"
-    Tier = "data"
+    Name    = "${var.project_name}-${var.environment}-data-subnet-${count.index + 1}"
+    Type    = "private"
+    Tier    = "data"
     Purpose = "database-cache"
   })
 }
@@ -169,7 +169,7 @@ resource "aws_db_subnet_group" "main" {
 # ElastiCache Subnet Group (using the same database subnets)
 resource "aws_elasticache_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-cache-subnet-group"
-  subnet_ids = aws_subnet.database[*].id  # Same subnets as database
+  subnet_ids = aws_subnet.database[*].id # Same subnets as database
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-cache-subnet-group"
@@ -270,7 +270,7 @@ resource "aws_security_group" "db_sg" {
   ingress {
     description = "Allow DB access from private application subnets"
     from_port   = 5432 # PostgreSQL port
-    to_port     = 5432 
+    to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = var.private_subnet_cidrs
   }
@@ -297,7 +297,7 @@ resource "aws_security_group" "cache_sg" {
   ingress {
     description = "Allow Cache access from private application subnets"
     from_port   = 6379 # Redis port
-    to_port     = 6379 
+    to_port     = 6379
     protocol    = "tcp"
     cidr_blocks = var.private_subnet_cidrs
   }

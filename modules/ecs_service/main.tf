@@ -116,16 +116,16 @@ resource "aws_ecs_task_definition" "app_task_definition" {
   cpu                      = var.cpu
   memory                   = var.memory
   # IAM Role ARNs are now passed as variables from parent module/root config
-  execution_role_arn       = var.ecs_task_execution_role_arn # For ECS agent permissions (pulling images, sending logs)
-  task_role_arn            = var.ecs_task_role_arn            # For application's permissions (e.g., SSM, S3 access)
+  execution_role_arn = var.ecs_task_execution_role_arn # For ECS agent permissions (pulling images, sending logs)
+  task_role_arn      = var.ecs_task_role_arn           # For application's permissions (e.g., SSM, S3 access)
 
   container_definitions = jsonencode([
     {
-      name        = "${var.project_name}-${var.environment}-container"
-      image       = var.docker_image # Docker image (e.g., from ECR)
-      cpu         = tonumber(var.cpu)
-      memory      = tonumber(var.memory)
-      essential   = true
+      name      = "${var.project_name}-${var.environment}-container"
+      image     = var.docker_image # Docker image (e.g., from ECR)
+      cpu       = tonumber(var.cpu)
+      memory    = tonumber(var.memory)
+      essential = true
       portMappings = [
         {
           containerPort = tonumber(var.container_port)
@@ -192,8 +192,8 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids # Fargate tasks run in private subnets
-    security_groups = [aws_security_group.ecs_task_sg.id]
+    subnets          = var.private_subnet_ids # Fargate tasks run in private subnets
+    security_groups  = [aws_security_group.ecs_task_sg.id]
     assign_public_ip = false # Fargate tasks should not have public IPs in private subnets
   }
 
@@ -234,11 +234,11 @@ resource "aws_appautoscaling_target" "ecs_service_scale_target" {
 
 # 2. Define Scaling Policy for CPU Utilization
 resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
-  name                   = "${var.project_name}-${var.environment}-cpu-scaling-policy"
-  service_namespace      = "ecs"
-  resource_id            = aws_appautoscaling_target.ecs_service_scale_target.resource_id
-  scalable_dimension     = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
-  policy_type            = "TargetTrackingScaling"
+  name               = "${var.project_name}-${var.environment}-cpu-scaling-policy"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.ecs_service_scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
@@ -253,11 +253,11 @@ resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
 
 # 3. Define Scaling Policy for Memory Utilization
 resource "aws_appautoscaling_policy" "ecs_memory_scaling_policy" {
-  name                   = "${var.project_name}-${var.environment}-memory-scaling-policy"
-  service_namespace      = "ecs"
-  resource_id            = aws_appautoscaling_target.ecs_service_scale_target.resource_id
-  scalable_dimension     = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
-  policy_type            = "TargetTrackingScaling"
+  name               = "${var.project_name}-${var.environment}-memory-scaling-policy"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.ecs_service_scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageMemoryUtilization"

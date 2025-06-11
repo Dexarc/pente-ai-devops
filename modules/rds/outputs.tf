@@ -18,7 +18,7 @@ output "db_instance_endpoint" {
   value       = aws_db_instance.main.endpoint
 }
 
-output "db_instance_identifier"{
+output "db_instance_identifier" {
   description = "RDS instance identifier"
   value       = aws_db_instance.main.identifier
 }
