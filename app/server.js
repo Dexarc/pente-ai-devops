@@ -8,7 +8,7 @@ const AWS = require('aws-sdk'); // AWS SDK v2 (consider migrating to v3 for bett
 const { Client } = require('pg'); // PostgreSQL client
 
 const app = express();
-const port = process.env.CONTAINER_PORT || 3000;
+const port = process.env.PORT || process.env.CONTAINER_PORT || 80;
 
 // 2. Configure AWS SDK region with better error handling
 const awsRegion = process.env.AWS_REGION || 'us-east-1';
