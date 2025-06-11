@@ -278,3 +278,34 @@ resource "aws_appautoscaling_policy" "ecs_memory_scaling_policy" {
 
   depends_on = [aws_appautoscaling_target.ecs_service_scale_target]
 }
+
+# --- ECS Service Auto Scaling (Custom Metric : Requests) ---
+
+resource "aws_appautoscaling_policy" "ecs_custom_metric_scaling_policy" {
+  count = var.enable_custom_metric_autoscaling ? 1 : 0 # Only create if custom scaling is enabled
+
+  name               = "${var.project_name}-${var.environment}-requests-scaling-policy" # Updated name
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.ecs_service_scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    customized_metric_specification {
+      metric_name = var.custom_metric_filter_metric_name # References the metric filter's name
+      namespace   = var.custom_metric_filter_namespace   # References the metric filter's namespace
+      statistic   = "Sum"                                # Sum the 'Count' over the period (e.g., 1 minute)
+      unit        = "Count"                              # The unit of the metric
+
+      # No dimensions needed if the metric filter doesn't emit with dimensions
+    }
+    target_value       = var.custom_scaling_target_value
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+
+  # Ensure this policy depends on the metric filter
+  depends_on = [
+    aws_appautoscaling_target.ecs_service_scale_target
+  ]
+}

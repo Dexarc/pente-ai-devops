@@ -40,6 +40,8 @@ ecs_min_capacity                      = 1
 ecs_max_capacity                      = 3
 ecs_target_cpu_utilization_percent    = 70
 ecs_target_memory_utilization_percent = 60
+enable_custom_metric_autoscaling      = true # Enable custom metric-based auto-scaling
+custom_scaling_target_value           = 50   # Target value for custom metric auto-scaling
 
 # CloudWatch logs
 log_retention_days = 7

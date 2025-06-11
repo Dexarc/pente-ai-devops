@@ -264,6 +264,26 @@ resource "aws_cloudwatch_metric_alarm" "rds_replica_lag_high" {
   tags          = var.tags
 }
 
+# Custom Metric Filter for Application Requests
+resource "aws_cloudwatch_log_metric_filter" "app_requests_metric_filter" {
+  name           = "${var.project_name}-${var.environment}-app-requests-filter"
+  log_group_name = var.ecs_app_log_group_name # Raw logs group
+
+  # This filter pattern matches any log line containing " - GET / - "
+  # For Node.js application logs with custom middleware format:
+  # Matches: "2025-06-11T14:14:35.000Z - GET / - 10.0.1.182"
+  pattern = "GET"
+
+  metric_transformation {
+    name          = "Requests"         # Name of the custom metric
+    namespace     = "Pente/AppMetrics" # Custom namespace for application metrics
+    value         = "1"                # Increment by 1 for each match
+    default_value = "0"                # Default value if no matches
+    unit          = "Count"            # Unit of the metric
+  }
+
+}
+
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.project_name}-${var.environment}-dashboard"
 

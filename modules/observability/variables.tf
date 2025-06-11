@@ -105,3 +105,8 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "ecs_app_log_group_name" {
+  description = "The name of the CloudWatch Log Group where ECS application logs are sent."
+  type        = string
+}

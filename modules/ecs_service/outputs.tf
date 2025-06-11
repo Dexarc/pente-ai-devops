@@ -34,3 +34,8 @@ output "cloudwatch_log_group_name" {
   description = "The name of the CloudWatch Log Group for ECS Task logs."
   value       = aws_cloudwatch_log_group.ecs_app_log_group.name
 }
+
+output "ecs_app_log_group_name" {
+  description = "The name of the CloudWatch Log Group for ECS application logs."
+  value       = aws_cloudwatch_log_group.ecs_app_log_group.name
+}

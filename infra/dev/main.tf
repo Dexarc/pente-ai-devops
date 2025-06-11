@@ -104,6 +104,9 @@ module "ecs_service" {
   ecs_target_memory_utilization_percent = var.ecs_target_memory_utilization_percent
   ecs_desired_count                     = var.ecs_desired_count
 
+  custom_metric_filter_metric_name = module.observability.app_requests_metric_name
+  custom_metric_filter_namespace   = module.observability.app_requests_metric_namespace
+  custom_scaling_target_value      = var.custom_scaling_target_value
 
   # IAM Roles (from Security module)
   ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn
@@ -137,6 +140,8 @@ module "observability" {
   rds_cpu_alarm_threshold_percent      = var.rds_cpu_alarm_threshold_percent
   alb_5xx_error_rate_threshold_percent = var.alb_5xx_error_rate_threshold_percent
   rds_read_replica_lag_threshold       = var.rds_read_replica_lag_threshold
+
+  ecs_app_log_group_name = module.ecs_service.ecs_app_log_group_name
 
   lambda_code_zip_path = var.lambda_code_zip_path
   log_retention_days   = var.log_retention_days

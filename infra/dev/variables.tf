@@ -159,6 +159,16 @@ variable "ecs_target_memory_utilization_percent" {
   type        = number
 }
 
+variable "enable_custom_metric_autoscaling" {
+  description = "Flag to enable custom metric-based auto-scaling for ECS service."
+  type        = bool
+}
+
+variable "custom_scaling_target_value" {
+  description = "Target value for custom metric-based auto-scaling."
+  type        = number
+}
+
 # Observability variables
 variable "alert_email" {
   description = "Email address for CloudWatch alarm notifications."
