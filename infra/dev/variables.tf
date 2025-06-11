@@ -82,7 +82,7 @@ variable "apply_immediately" {
 variable "create_read_replica" {
   description = "Whether to create a read replica for the RDS instance."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "replica_instance_class" {
@@ -158,4 +158,35 @@ variable "log_retention_days" {
   description = "Number of days to retain logs in CloudWatch."
   type        = number
   default     = 7
+}
+
+# Observability variables
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications."
+  type        = string
+  default     = "sarenkumar86@gmail.com"
+}
+
+variable "ecs_cpu_alarm_threshold_percent" {
+  description = "Threshold percentage for ECS CPU utilization alarm."
+  type        = number
+  default     = 80
+}
+
+variable "ecs_memory_alarm_threshold_percent" {
+  description = "Threshold percentage for ECS Memory utilization alarm."
+  type        = number
+  default     = 80
+}
+
+variable "rds_cpu_alarm_threshold_percent" {
+  description = "Threshold percentage for RDS CPU utilization alarm."
+  type        = number
+  default     = 70
+}
+
+variable "alb_5xx_error_rate_threshold_percent" {
+  description = "Threshold percentage for ALB HTTP 5xx error rate alarm."
+  type        = number
+  default     = 5 # For > 5% error rate
 }

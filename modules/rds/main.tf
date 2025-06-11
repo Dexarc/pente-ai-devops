@@ -28,10 +28,11 @@ resource "aws_ssm_parameter" "db_username" {
 # Store the generated master password in SSM Parameter Store as SecureString
 resource "aws_ssm_parameter" "db_password" {
   name        = "/${var.project_name}/${var.environment}/rds/password"
-  description = "RDS Master Password for ${var.project_name}-${var.environment}"
   type        = "SecureString"
   value       = random_password.db_master_password.result # Use the generated password
   tier        = "Standard"
+  description = "RDS Master Password for ${var.project_name}-${var.environment}"
+  key_id      = var.kms_rds_key_arn # Crucial for SecureString encryption
 
   tags = var.tags
 }
@@ -70,7 +71,34 @@ resource "aws_db_parameter_group" "main" {
   }
 }
 
-# RDS PostgreSQL Instance
+# IAM Role for RDS Enhanced Monitoring (Moved up for clarity before usage)
+resource "aws_iam_role" "rds_enhanced_monitoring" {
+  name = "${var.project_name}-${var.environment}-rds-enhanced-monitoring"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "monitoring.rds.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# Attach the AWS managed policy for RDS Enhanced Monitoring
+resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
+  role       = aws_iam_role.rds_enhanced_monitoring.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+}
+
+
+# RDS PostgreSQL Instance (Primary)
 resource "aws_db_instance" "main" {
   identifier = "${var.project_name}-${var.environment}-db"
 
@@ -105,7 +133,7 @@ resource "aws_db_instance" "main" {
   maintenance_window       = "sun:04:00-sun:05:00"
   auto_minor_version_upgrade = true
   skip_final_snapshot      = true
-  deletion_protection      = false
+  deletion_protection      = false # For production, consider true
 
   # Performance Insights
   performance_insights_enabled = true
@@ -137,62 +165,46 @@ resource "aws_db_instance" "main" {
   ]
 }
 
-# IAM Role for RDS Enhanced Monitoring
-resource "aws_iam_role" "rds_enhanced_monitoring" {
-  name = "${var.project_name}-${var.environment}-rds-enhanced-monitoring"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "monitoring.rds.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = var.tags
-}
-
-# Attach the AWS managed policy for RDS Enhanced Monitoring
-resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
-  role       = aws_iam_role.rds_enhanced_monitoring.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-}
-
-# # CloudWatch Log Group for PostgreSQL logs
-# resource "aws_cloudwatch_log_group" "postgresql" {
-#   name              = "/aws/rds/instance/${aws_db_instance.main.identifier}/postgresql"
-#   retention_in_days = var.log_retention_days
-
-#   tags = var.tags
-# }
-
 # RDS Read Replica (optional, for high availability)
 resource "aws_db_instance" "read_replica" {
   count = var.create_read_replica ? 1 : 0
 
   identifier = "${var.project_name}-${var.environment}-db-replica"
 
-  # Read replica configuration
-  replicate_source_db = aws_db_instance.main.identifier
+  # Read replica configuration - IMPORTANT: Inherit or explicitly set to avoid replacement
+  replicate_source_db = aws_db_instance.main.arn
   instance_class      = var.replica_instance_class != null ? var.replica_instance_class : var.db_instance_class
 
-  # Override settings for replica
+  # Networking - MUST BE EXPLICITLY SET
+  db_subnet_group_name   = var.db_subnet_group_name
+  vpc_security_group_ids = [var.db_security_group_id]
   publicly_accessible    = false
-  auto_minor_version_upgrade = true
-  skip_final_snapshot    = true
+  multi_az               = false # Read replicas are commonly single AZ, set explicitly
 
-  # Performance Insights
+  # Storage Configuration - MUST BE EXPLICITLY SET & ALIGNED WITH PRIMARY
+  allocated_storage     = aws_db_instance.main.allocated_storage # Match primary
+  storage_type          = aws_db_instance.main.storage_type      # Match primary
+  storage_encrypted     = aws_db_instance.main.storage_encrypted # Match primary (should be true)
+  kms_key_id           = var.kms_rds_key_arn                   # Match primary's KMS key for consistency
+
+  # Backup Configuration - Explicitly set for replica (usually 0)
+  backup_retention_period   = 0                     # Replicas typically do not have backups
+  skip_final_snapshot    = true                   # Skip final snapshot for replicas
+
+  # Other important settings
+  auto_minor_version_upgrade = true
+  deletion_protection      = false # Replicas often don't need deletion protection
+
+  # Performance Insights (if enabled on primary and desired on replica)
   performance_insights_enabled = true
   performance_insights_retention_period = 7
 
-  # Enhanced Monitoring
+  # Enhanced Monitoring (if enabled on primary and desired on replica)
   monitoring_interval = 60
   monitoring_role_arn = aws_iam_role.rds_enhanced_monitoring.arn
+
+  # Logging - Explicitly set for replica (usually empty unless specific replica logs needed)
+  enabled_cloudwatch_logs_exports = [] # Replicas typically don't export logs unless configured
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-${var.environment}-db-replica"
@@ -201,7 +213,7 @@ resource "aws_db_instance" "read_replica" {
 
   lifecycle {
     ignore_changes = [
-      password,
+      password, # Still ignore password changes on replica if applicable (though replica doesn't have its own password)
     ]
   }
 

@@ -18,6 +18,11 @@ output "db_instance_endpoint" {
   value       = aws_db_instance.main.endpoint
 }
 
+output "db_instance_identifier"{
+  description = "RDS instance identifier"
+  value       = aws_db_instance.main.identifier
+}
+
 output "db_instance_address" {
   description = "RDS instance endpoint address (hostname only)"
   value       = aws_db_instance.main.address
@@ -69,6 +74,12 @@ output "db_replica_id" {
   description = "RDS read replica instance ID"
   value       = var.create_read_replica ? aws_db_instance.read_replica[0].id : null
 }
+
+output "read_replica_identifier" {
+  description = "The DB instance identifier of the read replica (if created)."
+  value       = var.create_read_replica ? aws_db_instance.read_replica[0].identifier : null
+}
+
 
 output "db_replica_endpoint" {
   description = "RDS read replica endpoint"
