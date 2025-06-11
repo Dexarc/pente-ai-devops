@@ -93,10 +93,16 @@ module "ecs_service" {
 
   docker_image       = var.app_docker_image
   container_port     = var.app_container_port
-  desired_count      = var.ecs_desired_count
   cpu                = var.ecs_task_cpu
   memory             = var.ecs_task_memory
   log_retention_days = var.log_retention_days
+
+  ecs_min_capacity                      = var.ecs_min_capacity
+  ecs_max_capacity                      = var.ecs_max_capacity
+  ecs_target_cpu_utilization_percent    = var.ecs_target_cpu_utilization_percent
+  ecs_target_memory_utilization_percent = var.ecs_target_memory_utilization_percent
+  ecs_desired_count                     = var.ecs_desired_count
+
 
   # IAM Roles (from Security module)
   ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn

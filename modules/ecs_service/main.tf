@@ -179,12 +179,16 @@ resource "aws_cloudwatch_log_group" "ecs_app_log_group" {
 }
 
 
+# modules/ecs_service/main.tf
+
+# ... (Your existing Security Groups, ALB, Target Group, Listener, Task Definition, Log Group) ...
+
 # --- ECS Service ---
 resource "aws_ecs_service" "app_service" {
   name            = "${var.project_name}-${var.environment}-app-service"
   cluster         = var.ecs_cluster_id # The ID or ARN of the ECS cluster
   task_definition = aws_ecs_task_definition.app_task_definition.arn
-  desired_count   = var.desired_count
+  desired_count   = var.ecs_desired_count # Use the variable for initial desired count
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -199,6 +203,11 @@ resource "aws_ecs_service" "app_service" {
     container_port   = var.container_port
   }
 
+  # Add deployment_controller for zero-downtime (ECS handles blue/green or rolling updates)
+  deployment_controller {
+    type = "ECS" # For rolling updates
+  }
+
   # Ensure the service is created after its dependencies are ready
   depends_on = [
     aws_lb_listener.http_listener,
@@ -207,4 +216,56 @@ resource "aws_ecs_service" "app_service" {
   ]
 
   tags = var.tags
+}
+
+# --- ECS Service Auto Scaling ---
+
+# 1. Define the Scalable Target: ECS Service Desired Count
+resource "aws_appautoscaling_target" "ecs_service_scale_target" {
+  service_namespace  = "ecs"
+  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.app_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  min_capacity       = var.ecs_min_capacity
+  max_capacity       = var.ecs_max_capacity
+
+  depends_on = [aws_ecs_service.app_service]
+}
+
+# 2. Define Scaling Policy for CPU Utilization
+resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
+  name                   = "${var.project_name}-${var.environment}-cpu-scaling-policy"
+  service_namespace      = "ecs"
+  resource_id            = aws_appautoscaling_target.ecs_service_scale_target.resource_id
+  scalable_dimension     = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
+  policy_type            = "TargetTrackingScaling"
+  # Target Tracking scales based on a metric value
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSClusterCPUUtilization"
+    }
+    target_value       = var.ecs_target_cpu_utilization_percent # e.g., 70
+    scale_in_cooldown  = 300 # seconds to wait before scaling in
+    scale_out_cooldown = 60  # seconds to wait before scaling out
+  }
+
+  depends_on = [aws_appautoscaling_target.ecs_service_scale_target]
+}
+
+# 3. Define Scaling Policy for Memory Utilization
+resource "aws_appautoscaling_policy" "ecs_memory_scaling_policy" {
+  name                   = "${var.project_name}-${var.environment}-memory-scaling-policy"
+  service_namespace      = "ecs"
+  resource_id            = aws_appautoscaling_target.ecs_service_scale_target.resource_id
+  scalable_dimension     = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
+  policy_type            = "TargetTrackingScaling"
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSClusterMemoryUtilization"
+    }
+    target_value       = var.ecs_target_memory_utilization_percent # e.g., 60
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+
+  depends_on = [aws_appautoscaling_target.ecs_service_scale_target]
 }

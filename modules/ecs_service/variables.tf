@@ -51,12 +51,6 @@ variable "container_port" {
   default     = 80 # Common default for web apps
 }
 
-variable "desired_count" {
-  description = "The desired number of tasks to run for the ECS service."
-  type        = number
-  default     = 1
-}
-
 variable "cpu" {
   description = "The CPU units for the Fargate task (e.g., 256, 512, 1024). Corresponds to 0.25, 0.5, 1 vCPU."
   type        = string
@@ -90,6 +84,37 @@ variable "log_retention_days" {
   type        = number
   default     = 7
 }
+
+variable "ecs_min_capacity" {
+  description = "Minimum number of tasks for the ECS service."
+  type        = number
+  default     = 1 # Start with 1 task
+}
+
+variable "ecs_max_capacity" {
+  description = "Maximum number of tasks for the ECS service."
+  type        = number
+  default     = 3 # Allow scaling up to 3 tasks
+}
+
+variable "ecs_target_cpu_utilization_percent" {
+  description = "Target CPU utilization percentage for ECS service auto-scaling."
+  type        = number
+  default     = 70 # Scale up if CPU goes above 70%
+}
+
+variable "ecs_target_memory_utilization_percent" {
+  description = "Target Memory utilization percentage for ECS service auto-scaling."
+  type        = number
+  default     = 60 # Scale up if Memory goes above 60%
+}
+
+variable "ecs_desired_count" {
+  description = "Desired count of ECS tasks."
+  type        = number
+  default     = 1
+}
+
 
 # --- Database Connection Details ---
 variable "db_endpoint_address" {

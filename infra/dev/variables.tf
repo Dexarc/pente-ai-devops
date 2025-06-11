@@ -139,6 +139,26 @@ variable "log_retention_days" {
   type        = number
 }
 
+variable "ecs_min_capacity" {
+  description = "Minimum number of tasks for the ECS service."
+  type        = number
+}
+
+variable "ecs_max_capacity" {
+  description = "Maximum number of tasks for the ECS service."
+  type        = number
+}
+
+variable "ecs_target_cpu_utilization_percent" {
+  description = "Target CPU utilization percentage for ECS service auto-scaling."
+  type        = number
+}
+
+variable "ecs_target_memory_utilization_percent" {
+  description = "Target Memory utilization percentage for ECS service auto-scaling."
+  type        = number
+}
+
 # Observability variables
 variable "alert_email" {
   description = "Email address for CloudWatch alarm notifications."

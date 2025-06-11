@@ -35,6 +35,12 @@ ecs_desired_count  = 1
 ecs_task_cpu       = "256"
 ecs_task_memory    = "512"
 
+# ECS Auto Scaling variables (for auto-scaling policies)
+ecs_min_capacity                      = 1
+ecs_max_capacity                      = 3
+ecs_target_cpu_utilization_percent    = 70
+ecs_target_memory_utilization_percent = 60
+
 # CloudWatch logs
 log_retention_days = 7
 
