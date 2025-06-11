@@ -26,3 +26,8 @@ output "ecs_task_role_arn" {
   description = "ARN of the IAM role for ECS Tasks (application)."
   value       = aws_iam_role.ecs_task.arn
 }
+
+output "guardduty_detector_id" {
+  description = "The ID of the GuardDuty detector."
+  value       = aws_guardduty_detector.main.id
+}
