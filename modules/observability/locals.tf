@@ -39,18 +39,19 @@ locals {
         period  = 300
       }
     },
-    # Application Logs - UPDATED TO SANITIZED LOGS
+    # Application Logs
     {
-        type   = "logs"
-        x      = 0
-        y      = 7
-        width  = 24
-        height = 8
-        properties = {
-        query  = "SOURCE '/ecs/${var.project_name}-${var.environment}-app-sanitized' | fields @timestamp, @message | sort @timestamp desc | limit 20"
-        region = var.aws_region
-        title  = "Sanitized Application Logs"
-        }
+      type   = "log"
+      x      = 0
+      y      = 7
+      width  = 24
+      height = 8
+      properties = {
+        query   = "SOURCE '/ecs/${var.project_name}-${var.environment}-app-sanitized'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20"
+        region  = var.aws_region
+        title   = "Sanitized Application Logs"
+        view    = "table"
+      }
     }
   ]
 
@@ -75,26 +76,27 @@ locals {
       }
     }
   ] : []
+  
   # Conditional RDS Replica Lag Widget
-     rds_replica_widget_list = var.create_read_replica ? [
-        {
-          type   = "metric"
-          x      = 0
-          y      = 21 # Position below ALB or logs if ALB isn't there
-          width  = 12
-          height = 6
-          properties = {
-            metrics = [
-              ["AWS/RDS", "ReplicaLag", "DBInstanceIdentifier", var.rds_read_replica_identifier]
-            ]
-            view       = "timeSeries"
-            stacked    = false
-            region     = var.aws_region
-            title      = "RDS Replica Lag"
-            period     = 300
-          }
-        }
-      ] : []
+  rds_replica_widget_list = var.create_read_replica ? [
+    {
+      type   = "metric"
+      x      = 0
+      y      = 21 # Position below ALB or logs if ALB isn't there
+      width  = 12
+      height = 6
+      properties = {
+        metrics = [
+          ["AWS/RDS", "ReplicaLag", "DBInstanceIdentifier", var.rds_read_replica_identifier]
+        ]
+        view       = "timeSeries"
+        stacked    = false
+        region     = var.aws_region
+        title      = "RDS Replica Lag"
+        period     = 300
+      }
+    }
+  ] : []
 
   all_widgets = concat(local.base_widgets, local.alb_widget, local.rds_replica_widget_list)
 }
