@@ -39,7 +39,7 @@ locals {
         period  = 300
       }
     },
-    # Application Logs
+    # Application Logs - UPDATED TO SANITIZED LOGS
     {
         type   = "logs"
         x      = 0
@@ -47,9 +47,9 @@ locals {
         width  = 24
         height = 8
         properties = {
-        query  = "SOURCE '/ecs/${var.project_name}-${var.environment}-app' | fields @timestamp, @message | sort @timestamp desc | limit 20"
+        query  = "SOURCE '/ecs/${var.project_name}-${var.environment}-app-sanitized' | fields @timestamp, @message | sort @timestamp desc | limit 20"
         region = var.aws_region
-        title  = "Application Logs"
+        title  = "Sanitized Application Logs"
         }
     }
   ]

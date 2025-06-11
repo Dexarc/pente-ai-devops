@@ -130,5 +130,8 @@ module "observability" {
   rds_cpu_alarm_threshold_percent  = var.rds_cpu_alarm_threshold_percent
   alb_5xx_error_rate_threshold_percent = var.alb_5xx_error_rate_threshold_percent
 
+  lambda_code_zip_path             = var.lambda_code_zip_path
+  log_retention_days               = var.log_retention_days
+
   tags                             = merge(local.common_tags, var.tags)
 }

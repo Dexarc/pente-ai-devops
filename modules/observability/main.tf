@@ -1,4 +1,5 @@
 # modules/observability/main.tf
+data "aws_caller_identity" "current" {}
 
 # --- SNS Topic for Alerts ---
 resource "aws_sns_topic" "alerts" {
@@ -12,6 +13,115 @@ resource "aws_sns_topic_subscription" "email_subscription" {
   endpoint  = var.alert_email # Email address for notifications
   # NOTE: You MUST confirm this subscription via email after first terraform apply!
 }
+
+# --- PII Stripping Lambda Resources ---
+
+# 1. IAM Role for Lambda Function
+resource "aws_iam_role" "pii_stripper_lambda_role" {
+  name = "${var.project_name}-${var.environment}-pii-stripper-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# 2. IAM Policy for Lambda to Read/Write Logs
+resource "aws_iam_policy" "pii_stripper_lambda_policy" {
+  name        = "${var.project_name}-${var.environment}-pii-stripper-lambda-policy"
+  description = "IAM policy for Lambda to read source logs, write sanitized logs."
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "*" # Consider scoping this down to specific log group ARNs for production
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "pii_stripper_lambda_policy_attach" {
+  role       = aws_iam_role.pii_stripper_lambda_role.name
+  policy_arn = aws_iam_policy.pii_stripper_lambda_policy.arn
+}
+
+# 3. New Log Group for Sanitized Logs
+resource "aws_cloudwatch_log_group" "sanitized_app_logs" {
+  name              = "/ecs/${var.project_name}-${var.environment}-app-sanitized"
+  retention_in_days = var.log_retention_days # Use the same retention as main logs
+
+  tags = var.tags
+}
+
+# 4. Lambda Function Resource
+resource "aws_lambda_function" "pii_stripper" {
+  function_name    = "${var.project_name}-${var.environment}-pii-stripper"
+  handler          = "index.handler"
+  runtime          = "nodejs20.x"
+  role             = aws_iam_role.pii_stripper_lambda_role.arn
+  timeout          = 30
+  memory_size      = 128
+
+  filename         = var.lambda_code_zip_path
+  source_code_hash = filebase64sha256(var.lambda_code_zip_path)
+
+  environment {
+    variables = {
+      SANITIZED_LOG_GROUP_NAME = aws_cloudwatch_log_group.sanitized_app_logs.name
+    #   AWS_REGION               = var.aws_region # AWS region is automatically set by Lambda
+    }
+  }
+
+  tags = var.tags
+}
+
+# 5. Permission for CloudWatch Logs to Invoke Lambda
+resource "aws_lambda_permission" "allow_cloudwatch_logs" {
+  statement_id  = "AllowExecutionFromCloudWatchLogs"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.pii_stripper.function_name
+  principal     = "logs.${var.aws_region}.amazonaws.com"
+  # Source ARN must be the original application log group
+  # The test document mentions "Centralize application logs in CloudWatch Logs" 
+  source_arn    = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.project_name}-${var.environment}-app:*"
+
+  depends_on = [
+    aws_lambda_function.pii_stripper
+  ]
+}
+
+# 6. CloudWatch Logs Subscription Filter 
+# This links your main app log group to the PII stripping Lambda
+resource "aws_cloudwatch_log_subscription_filter" "to_pii_stripper_lambda" {
+  name            = "${var.project_name}-${var.environment}-pii-filter"
+  log_group_name  = "/ecs/${var.project_name}-${var.environment}-app" # Original application log group
+  destination_arn = aws_lambda_function.pii_stripper.arn
+  filter_pattern  = "" # An empty filter pattern sends ALL log events.
+
+  depends_on = [
+    aws_lambda_permission.allow_cloudwatch_logs
+  ]
+}
+
+
 
 # --- CloudWatch Alarms ---
 

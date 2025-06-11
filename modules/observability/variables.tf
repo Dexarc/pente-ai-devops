@@ -88,3 +88,14 @@ variable "rds_read_replica_identifier" {
   type        = string
   default     = null # Default to null if no replica is created
 }
+
+variable "lambda_code_zip_path" {
+  description = "Path to the ZIP file containing the PII stripping Lambda function code."
+  type        = string
+}
+
+variable "log_retention_days" {
+  description = "Number of days to retain CloudWatch Logs."
+  type        = number
+  default     = 30
+}
