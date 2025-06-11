@@ -69,6 +69,11 @@ jobs:
         working-directory: ./infra/${{env.project_env}}
         run: terraform validate
 
+      - name: Get the Commit SHA
+        id: vars
+        run: echo ::set-output name=sha::$(git rev-parse HEAD)
+
+
       # Step 3: Build and push Docker image to ECR
       # Ensure ECR repository exists (since Terraform hasn't run yet)
       - name: Ensure ECR Repository Exists
@@ -87,13 +92,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push Docker Image
+      - name: Build Docker image
         working-directory: ./app
-        run: |
-          docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
-          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+        run: docker build . --file Dockerfile --tag ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.sha }}
+
+      - name: Push Docker image
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.sha }}
 
       - name: Google Gemini Security Scan
         env:
