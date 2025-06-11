@@ -238,14 +238,13 @@ resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
   resource_id            = aws_appautoscaling_target.ecs_service_scale_target.resource_id
   scalable_dimension     = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
   policy_type            = "TargetTrackingScaling"
-  # Target Tracking scales based on a metric value
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
-      predefined_metric_type = "ECSClusterCPUUtilization"
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = var.ecs_target_cpu_utilization_percent # e.g., 70
-    scale_in_cooldown  = 300 # seconds to wait before scaling in
-    scale_out_cooldown = 60  # seconds to wait before scaling out
+    target_value       = var.ecs_target_cpu_utilization_percent
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
   }
 
   depends_on = [aws_appautoscaling_target.ecs_service_scale_target]
@@ -260,9 +259,9 @@ resource "aws_appautoscaling_policy" "ecs_memory_scaling_policy" {
   policy_type            = "TargetTrackingScaling"
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
-      predefined_metric_type = "ECSClusterMemoryUtilization"
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
-    target_value       = var.ecs_target_memory_utilization_percent # e.g., 60
+    target_value       = var.ecs_target_memory_utilization_percent
     scale_in_cooldown  = 300
     scale_out_cooldown = 60
   }
