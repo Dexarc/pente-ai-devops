@@ -129,8 +129,8 @@ jobs:
             '{contents: [{parts: [{text: $text}]}]}')
 
           echo "Sending request to Gemini API..."
-          # 3. Make the API call to Gemini (using gemini-pro model)
-          GEMINI_RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+          # 3. Make the API call to Gemini (using gemini-flash model)
+          GEMINI_RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d "$REQUEST_BODY")
 
@@ -175,16 +175,6 @@ jobs:
           echo "---" >> "$GITHUB_STEP_SUMMARY"
           echo "This report is also available in the workflow logs as 'security-report.md'." >> "$GITHUB_STEP_SUMMARY"
 
-
-      # Step 4: Apply Terraform in non-prod workspace
-      - name: Terraform Init
-        working-directory: ./infra/${{env.project_env}}
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-            -backend-config="key=dev/terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}"
-
       - name: Terraform Plan
         working-directory: ./infra/${{env.project_env}}
         run: terraform plan -out=tfplan
@@ -196,16 +186,9 @@ jobs:
       # Step 5: Deploy new image to ECS with zero-downtime rolling update
       - name: Deploy to ECS (Zero-downtime Rolling Update)
         run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.sha }}"
           
           echo "🚀 Deploying new image: $IMAGE_URI"
-          
-          # Get current task definition
-          TASK_DEFINITION=$(aws ecs describe-services \
-            --cluster ${{ env.ECS_CLUSTER_NAME }} \
-            --services ${{ env.ECS_SERVICE_NAME }} \
-            --query 'services[0].taskDefinition' \
-            --output text)
           
           # Update ECS service with zero-downtime rolling deployment
           aws ecs update-service \
