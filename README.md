@@ -20,7 +20,9 @@ This repository contains a comprehensive solution for the AWS DevOps Engineer Sk
     - [5.1 GuardDuty & AWS Config Rules](#51-guardduty--aws-config-rules)
     - [5.2 Secrets Management](#52-secrets-management)
     - [5.3 Gemini Integration](#53-gemini-integration)
-
+6. [Cost Optimization](#cost-optimization)
+    - [6.1 Monthly Cost Analysis (Hypothetical)](#61-monthly-cost-analysis-hypothetical)
+    - [6.2 Proposed Cost Optimizations](#62-proposed-cost-optimizations)
 ---
 
 ## Architecture Overview
@@ -30,7 +32,7 @@ This solution deploys a highly available, secure, and observable web application
 **Key components include:**
 
 - **Networking:** VPC across two AZs with public, private, and database subnets, Internet Gateway, NAT Gateway.
-- **Compute:** ECS Cluster with Fargate Launch Type for the application microservice, fronted by an Application Load Balancer (ALB).
+- **Compute:** ECS Cluster with Fargate Launch Type for the application microservice, fronted by an Application Load Balancer (ALB) with Auto scaling enabled on AWS managed and Custom metrics.
 - **Data Storage:** Multi-AZ PostgreSQL RDS instance (with read replica), Redis ElastiCache cluster, S3 buckets for static assets and Terraform state.
 - **Security:** IAM roles with least privilege, granular Security Groups, KMS encryption for RDS, S3, ElastiCache, SSM Parameter Store for secrets, GuardDuty, and AWS Config Rules.
 - **Observability:** Centralized CloudWatch Logs (with PII stripping Lambda), CloudWatch Alarms, and a comprehensive CloudWatch Dashboard.
@@ -222,4 +224,39 @@ Application secrets, such as the RDS database username and password, are securel
 **Security Report:** Gemini's analysis will generate a **Markdown-formatted "security report"** that can be posted as a pull request comment (simulated via `echo` or a more advanced GitHub Action).
 
 ---
+## Cost Optimization
+
+After deploying the infrastructure, it's crucial to analyze and optimize its monthly running cost. This section outlines a hypothetical cost analysis for the deployed components and proposes two key optimization strategies.
+
+### 6.1 Monthly Cost Analysis (Hypothetical)
+
+Based on the described architecture, here's a hypothetical breakdown of potential monthly costs. **Note:** These are estimates and actual costs will vary significantly based on region, exact instance sizes, data transfer, and usage patterns.
+
+* **Amazon ECS (Fargate):** This will be highly dependent on the number of tasks, their vCPU/memory configurations, and how long they run. For a small application, this could range from \$50 - \$200+.
+* **Amazon RDS (PostgreSQL Multi-AZ):** A `db.t3.medium` or `db.m6g.large` instance with multi-AZ and read replica can be a significant cost. Expect \$100 - \$300+ per month depending on instance type, storage, and I/O.
+* **Amazon ElastiCache (Redis):** A small Redis cluster (e.g., `cache.t3.micro` or `cache.m6g.large` with replication) could cost \$30 - \$100+ per month.
+* **Application Load Balancer (ALB):** ALBs have a fixed hourly rate plus charges per LCU (Load Balancer Capacity Unit). Expect \$20 - \$40+ per month.
+* **NAT Gateway:** NAT Gateways incur an hourly charge and a data processing charge. This can be \$30 - \$70+ per month, especially if there's significant outbound traffic.
+* **Amazon S3:** Costs are generally low for static assets and Terraform state, primarily based on storage and requests. Likely under \$5 per month.
+* **AWS KMS, GuardDuty, AWS Config, CloudWatch:** These services are typically usage-based and for a small setup, will likely be a smaller portion of the overall bill, possibly \$10 - \$50+ combined.
+* **Data Transfer:** Ingress is free, but egress (data out) can add up depending on application usage.
+
+**Total Estimated Monthly Cost (Hypothetical):** For a moderate workload, the initial deployment could easily range from **\$250 - \$750+ per month**.
+
+### 6.2 Proposed Cost Optimizations
+
+1.  **Leverage Reserved Instances (RIs) or Savings Plans for RDS and ElastiCache:**
+    * **Optimization:** Both Amazon RDS and ElastiCache offer significant discounts (up to 70% or more) for committing to a 1-year or 3-year term with Reserved Instances or Savings Plans. Given that the database and cache are core components with consistent usage, purchasing RIs or Savings Plans for these services can drastically reduce their monthly cost.
+    * **Impact:** If we commit to a 1-year Reserved Instance for the RDS instance and ElastiCache cluster, we could potentially save 30-50% on their respective costs, leading to a substantial overall reduction in the infrastructure's monthly expenditure.
+
+2.  **Implement S3 Lifecycle Rules for Terraform State and Log Buckets:**
+    * **Optimization:** While S3 costs are typically low, for log archives or older Terraform state versions, storing them in standard S3 storage is often unnecessary. Implement S3 Lifecycle Rules to:
+        * Transition older log data (e.g., after 30-60 days) from the PII-stripped log archive bucket to **S3 Infrequent Access (IA)** or **S3 Glacier Flexible Retrieval** for cost-effective long-term archival.
+        * Similarly, for the Terraform state bucket, configure rules to automatically delete or transition older versions of state files that are no longer needed after a certain period (e.g., 90 days), as only the current state is actively used.
+    * **Impact:** This optimization helps in reducing storage costs for infrequently accessed or historical data. While the direct financial impact might be small for a single application, it's a good practice that scales well across multiple projects and ensures that only actively used data resides in more expensive storage tiers. It also helps manage data retention policies efficiently.
+    * **Current Scenario:** This has already been implemented in the dev environment.
+
+3. **Utilize Valkyrie Cache for Cost Reduction:**
+    * **Optimization:** Implementing **Valkyrie Cache** can significantly reduce the load on backend systems, such as databases, by caching frequently accessed data at the edge. This can lower the number of database queries, thereby reducing database load and costs associated with database I/O operations.
+    * **Impact:** By caching frequent queries or responses, Valkyrie Cache helps offload read-heavy workloads from your RDS instance, reducing the need for high compute or storage capacities on the database. This can lead to a significant reduction in the cost of database instances, particularly in scenarios where high read volumes are common.
 
