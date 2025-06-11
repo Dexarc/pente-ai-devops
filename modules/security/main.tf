@@ -293,6 +293,9 @@ resource "aws_config_config_rule" "restricted_ports" {
     source_identifier = "RESTRICTED_INCOMING_TRAFFIC"
   }
   tags = var.tags
+  depends_on = [
+    aws_config_configuration_recorder_status.main
+  ]
 }
 
 # 2. Ensure S3 buckets have server-side encryption enabled
@@ -304,6 +307,9 @@ resource "aws_config_config_rule" "s3_bucket_encrypted" {
     source_identifier = "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
   }
   tags = var.tags
+  depends_on = [
+    aws_config_configuration_recorder_status.main
+  ]
 }
 
 # 3. Ensure RDS instances are encrypted
@@ -315,6 +321,9 @@ resource "aws_config_config_rule" "rds_instance_encrypted" {
     source_identifier = "RDS_STORAGE_ENCRYPTED"
   }
   tags = var.tags
+  depends_on = [
+    aws_config_configuration_recorder_status.main
+  ]
 }
 
 # Data source for current AWS region and account ID, used for ARN construction
