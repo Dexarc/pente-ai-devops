@@ -40,9 +40,9 @@ jobs:
         working-directory: ./app
         run: npm run lint
 
-    #   - name: Run Unit Tests
-    #     working-directory: ./app
-    #     run: npm test
+      - name: Run Unit Tests
+        working-directory: ./app
+        run: npm test
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
