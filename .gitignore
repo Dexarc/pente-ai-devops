@@ -1,2 +1,11 @@
 .env
 node_modules
+**/**/.terraform
+**/.terragrunt-cache/
+**/.terraform.lock.hcl
+**/tf.plan
+**/tfstate
+**/tfstate.backup
+**/terraform.tfstate
+**/terraform.tfstate.backup
+
