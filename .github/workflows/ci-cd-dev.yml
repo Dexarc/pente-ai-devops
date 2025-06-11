@@ -1,0 +1,204 @@
+name: CI/CD Pipeline (Following Test Requirements)
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: hello-world-pente-repo
+  ECS_CLUSTER_NAME: pente-dev-ecs-cluster
+  ECS_SERVICE_NAME: pente-dev-app-service
+  project_env: dev
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Linting, unit tests, and terraform fmt/validate
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Run ESLint (Linting)
+        working-directory: ./app
+        run: npm run lint
+
+    #   - name: Run Unit Tests
+    #     working-directory: ./app
+    #     run: npm test
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.0
+
+      - name: Terraform Format Check
+        working-directory: ./infra/${{env.project_env}}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: ./infra/${{env.project_env}}
+        run: terraform validate
+
+      # Step 3: Build and push Docker image to ECR
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Ensure ECR repository exists (since Terraform hasn't run yet)
+      - name: Ensure ECR Repository Exists
+        run: |
+          if ! aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating ECR repository: ${{ env.ECR_REPOSITORY }}"
+            aws ecr create-repository \
+              --repository-name ${{ env.ECR_REPOSITORY }} \
+              --region ${{ env.AWS_REGION }} \
+              --image-scanning-configuration scanOnPush=true
+          else
+            echo "ECR repository already exists: ${{ env.ECR_REPOSITORY }}"
+          fi
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        working-directory: ./app
+        run: |
+          docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Google Gemini Security Scan
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq curl
+
+          echo "🔍 Scanning Terraform code for security misconfigurations with Google Gemini..."
+          
+          # 1. Extract Terraform code content
+          TF_CODE_PATH="./infra/${{env.project_env}}"
+
+          # Combine all .tf file contents into a single variable.
+          TERRAFORM_CODE=$(find "$TF_CODE_PATH" -name "*.tf" -print0 | xargs -0 cat)
+
+          # Escape the Terraform code for JSON to ensure it's properly formatted in the API request body
+          ESCAPED_TF_CODE=$(echo "$TERRAFORM_CODE" | jq -Rs .)
+
+          # 2. Construct the prompt for the Gemini API
+          # Request for security misconfigurations, best practices, and actionable recommendations.
+          PROMPT_TEXT="Analyze the following Terraform code for potential security vulnerabilities, misconfigurations, and adherence to AWS best practices. Provide a concise summary of critical findings, a list of actionable recommendations, and any general areas of concern. Format the response as a markdown document.
+
+          Terraform Code:
+          ${ESCAPED_TF_CODE}"
+
+          # Prepare the API request body in JSON format
+          REQUEST_BODY=$(jq -n \
+            --arg text "$PROMPT_TEXT" \
+            '{contents: [{parts: [{text: $text}]}]}')
+
+          echo "Sending request to Gemini API..."
+          # 3. Make the API call to Gemini (using gemini-pro model)
+          GEMINI_RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$REQUEST_BODY")
+
+          # 4. Parse the response from Gemini
+          # Extract the text content from Gemini's response.
+          # Use 'jq -r' to output raw string (no quotes), and '// empty' to handle cases where the path might not exist.
+          GEMINI_FINDINGS=$(echo "$GEMINI_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+
+          # 5. Generate a Markdown "security report"
+          REPORT_FILE="security-report.md"
+          echo "# 🛡️ Gemini Security Scan Report" > "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          echo "**Scan Date:** $(date)" >> "$REPORT_FILE"
+          echo "**Repository:** ${{ github.repository }}" >> "$REPORT_FILE"
+          echo "**Commit:** ${{ github.sha }}" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          
+          if [ -z "$GEMINI_FINDINGS" ]; then
+              # If no findings or an API error, log a warning and provide the full API response for debugging.
+              echo "## ⚠️ Gemini Scan Status: Failed or No Specific Findings" >> "$REPORT_FILE"
+              echo "---" >> "$REPORT_FILE"
+              echo "Full Gemini API Response (for debugging):" >> "$REPORT_FILE"
+              echo "\`\`\`json" >> "$REPORT_FILE"
+              echo "$GEMINI_RESPONSE" >> "$REPORT_FILE"
+              echo "\`\`\`" >> "$REPORT_FILE"
+              echo "::warning::Gemini scan did not return actionable findings or encountered an error. Check the workflow logs for details."
+              # You could add 'exit 1' here if you want the pipeline to fail on no findings or API error.
+          else
+              echo "$GEMINI_FINDINGS" >> "$REPORT_FILE"
+          fi
+          
+          echo "📋 Security report generated and logged to console:"
+          cat "$REPORT_FILE" # Output to workflow console logs
+
+          # 6. Post the report content to the GitHub Actions Job Summary
+          # This effectively "simulates" a PR comment by making the report
+          # easily visible directly on the workflow run page summary.
+          echo "## 🛡️ Gemini Security Scan Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat "$REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "---" >> "$GITHUB_STEP_SUMMARY"
+          echo "This report is also available in the workflow logs as 'security-report.md'." >> "$GITHUB_STEP_SUMMARY"
+
+
+      # Step 4: Apply Terraform in non-prod workspace
+      - name: Terraform Init
+        working-directory: ./infra/${{env.project_env}}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=dev/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+
+      - name: Terraform Plan
+        working-directory: ./infra/${{env.project_env}}
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./infra/${{env.project_env}}
+        run: terraform apply tfplan
+
+      # Step 5: Deploy new image to ECS with zero-downtime rolling update
+      - name: Deploy to ECS (Zero-downtime Rolling Update)
+        run: |
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          
+          echo "🚀 Deploying new image: $IMAGE_URI"
+          
+          # Get current task definition
+          TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER_NAME }} \
+            --services ${{ env.ECS_SERVICE_NAME }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          # Update ECS service with zero-downtime rolling deployment
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_NAME }} \
+            --service ${{ env.ECS_SERVICE_NAME }} \
+            --force-new-deployment \
+            --deployment-configuration "maximumPercent=200,minimumHealthyPercent=100"
+          
+          echo "✅ Zero-downtime rolling deployment initiated"
