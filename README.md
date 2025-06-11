@@ -36,7 +36,7 @@ This solution deploys a highly available, secure, and observable web application
 - **Observability:** Centralized CloudWatch Logs (with PII stripping Lambda), CloudWatch Alarms, and a comprehensive CloudWatch Dashboard.
 - **CI/CD:** GitHub Actions pipeline for automated build, test (unit, linting, Terraform validate), security scanning (Gemini), Docker image push to ECR, and zero-downtime deployment to ECS.
 
-![](./diagram.mmd)
+[Link to Architecture Diagram (Mermaid Diagram)](diagram.mmd)
 
 ---
 
