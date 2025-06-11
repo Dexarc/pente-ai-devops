@@ -200,6 +200,12 @@ resource "aws_default_network_acl" "default" {
     to_port    = 0
   }
 
+  lifecycle {
+    ignore_changes = [
+      subnet_ids, # Ignore changes to subnet_ids due to AWS implicit associations
+    ]
+  }
+
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-default-nacl"
   })

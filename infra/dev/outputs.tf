@@ -91,3 +91,14 @@ output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group"
   value       = module.ecs_service.cloudwatch_log_group_name
 }
+
+# Observability outputs
+output "cloudwatch_dashboard_url" {
+  description = "URL of the CloudWatch Dashboard."
+  value       = module.observability.dashboard_url # Assumes observability module outputs this
+}
+
+output "sns_topic_arn" {
+  description = "The ARN of the SNS topic used for alerts."
+  value       = module.observability.sns_topic_arn # Assumes observability module outputs this
+}

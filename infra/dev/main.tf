@@ -111,3 +111,27 @@ module "ecs_service" {
 
   tags = merge(local.common_tags, var.tags)
 }
+
+module "observability" {
+  source = "../../modules/observability"
+
+  project_name                = var.project_name
+  environment                 = var.environment
+  aws_region                  = data.aws_region.current.name
+  ecs_cluster_name            = aws_ecs_cluster.main.name
+  ecs_service_name            = module.ecs_service.ecs_service_name
+  db_instance_identifier      = module.rds.db_instance_identifier # Assumes rds module outputs 'db_instance_identifier'
+  alb_arn                     = module.ecs_service.alb_arn        # Assumes ecs_service module outputs 'alb_arn'
+  rds_read_replica_identifier = module.rds.read_replica_identifier
+
+  alert_email                          = var.alert_email
+  ecs_cpu_alarm_threshold_percent      = var.ecs_cpu_alarm_threshold_percent
+  ecs_memory_alarm_threshold_percent   = var.ecs_memory_alarm_threshold_percent
+  rds_cpu_alarm_threshold_percent      = var.rds_cpu_alarm_threshold_percent
+  alb_5xx_error_rate_threshold_percent = var.alb_5xx_error_rate_threshold_percent
+
+  lambda_code_zip_path = var.lambda_code_zip_path
+  log_retention_days   = var.log_retention_days
+
+  tags = merge(local.common_tags, var.tags)
+}
