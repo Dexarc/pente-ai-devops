@@ -186,20 +186,21 @@ resource "aws_cloudwatch_log_group" "ecs_app_log_group" {
 # --- ECS Service ---
 resource "aws_ecs_service" "app_service" {
   name            = "${var.project_name}-${var.environment}-app-service"
-  cluster         = var.ecs_cluster_id # The ID or ARN of the ECS cluster
+  cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.app_task_definition.arn
-  desired_count   = var.ecs_desired_count # Use the variable for initial desired count
+  desired_count   = var.ecs_desired_count # Initial desired count for the service, managed by ASG
+
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.private_subnet_ids # Fargate tasks run in private subnets
+    subnets          = var.private_subnet_ids
     security_groups  = [aws_security_group.ecs_task_sg.id]
-    assign_public_ip = false # Fargate tasks should not have public IPs in private subnets
+    assign_public_ip = false
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_target_group.arn
-    container_name   = "${var.project_name}-${var.environment}-container" # Matches name in container_definitions
+    container_name   = "${var.project_name}-${var.environment}-container"
     container_port   = var.container_port
   }
 
@@ -208,11 +209,16 @@ resource "aws_ecs_service" "app_service" {
     type = "ECS" # For rolling updates
   }
 
+  # IMPORTANT: Add these properties to help ECS recognize auto-scaling
+  # These are related to ECS's ability to manage tags, which can trigger internal updates
+  enable_ecs_managed_tags = true
+  propagate_tags          = "SERVICE"
+
   # Ensure the service is created after its dependencies are ready
   depends_on = [
     aws_lb_listener.http_listener,
     aws_lb_target_group.ecs_target_group,
-    aws_ecs_task_definition.app_task_definition
+    aws_ecs_task_definition.app_task_definition,
   ]
 
   tags = var.tags
@@ -223,14 +229,15 @@ resource "aws_ecs_service" "app_service" {
 # 1. Define the Scalable Target: ECS Service Desired Count
 resource "aws_appautoscaling_target" "ecs_service_scale_target" {
   service_namespace  = "ecs"
-  resource_id        = "service/${var.ecs_cluster_arn}/${aws_ecs_service.app_service.name}"
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.app_service.name}"  # Fixed: use cluster name, not ARN
   scalable_dimension = "ecs:service:DesiredCount"
   min_capacity       = var.ecs_min_capacity
   max_capacity       = var.ecs_max_capacity
 
   depends_on = [aws_ecs_service.app_service]
-}
 
+  tags = var.tags
+}
 
 # 2. Define Scaling Policy for CPU Utilization
 resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
@@ -239,13 +246,14 @@ resource "aws_appautoscaling_policy" "ecs_cpu_scaling_policy" {
   resource_id        = aws_appautoscaling_target.ecs_service_scale_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
   policy_type        = "TargetTrackingScaling"
+  
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
     target_value       = var.ecs_target_cpu_utilization_percent
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    scale_in_cooldown  = 300  # 5 minutes
+    scale_out_cooldown = 60   # 1 minute
   }
 
   depends_on = [aws_appautoscaling_target.ecs_service_scale_target]
@@ -258,13 +266,14 @@ resource "aws_appautoscaling_policy" "ecs_memory_scaling_policy" {
   resource_id        = aws_appautoscaling_target.ecs_service_scale_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_service_scale_target.scalable_dimension
   policy_type        = "TargetTrackingScaling"
+  
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
     target_value       = var.ecs_target_memory_utilization_percent
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    scale_in_cooldown  = 300  # 5 minutes
+    scale_out_cooldown = 60   # 1 minute
   }
 
   depends_on = [aws_appautoscaling_target.ecs_service_scale_target]

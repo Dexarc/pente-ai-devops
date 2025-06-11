@@ -40,6 +40,11 @@ variable "ecs_cluster_id" {
   type        = string
 }
 
+variable "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  type        = string
+}
+
 variable "docker_image" {
   description = "The Docker image URL for the ECS task (e.g., from ECR or Docker Hub)."
   type        = string
@@ -114,12 +119,6 @@ variable "ecs_desired_count" {
   type        = number
   default     = 1
 }
-
-variable "ecs_cluster_arn" {
-  description = "The ARN of the ECS cluster where the service will be deployed."
-  type        = string
-}
-
 
 # --- Database Connection Details ---
 variable "db_endpoint_address" {
